@@ -18,11 +18,9 @@ A comprehensive sample using Autodesk View & Data API powered by Node.js/MongoDb
 
 * Alternatively, you can also use a cloud-based database such as Mongolab which offers free tiers
 
-* you need to create 3 collections in your database: 'gallery.models', 'gallery.extensions', 'gallery.thumbnails'
+* You need to create 3 collections in your database: 'gallery.models', 'gallery.extensions', 'gallery.thumbnails'
 
 * You need to populate the 'gallery.models' with uploaded models translated with View & Data API (see section "Uploading your models for View & Data API" below), check the response from that [REST API](http://viewer.autodesk.io/node/ng-gallery/api/models) to see how a populated database needs to look like.
-
-* In order to populate your database, you need to upload models through the View & Data WebService. See "Uploading your models to View & Data Web Service" section below.
 
 * Set your database settings in config-server.js according to your MongoDb install
 
