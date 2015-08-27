@@ -1,0 +1,51 @@
+
+<div class="console-background">
+
+</div>
+
+<div class="console">
+
+  <div class="box droptreebox" id="upload-dropzone">
+
+    <div id="tree-box-list" aria-dropeffect="copy execute">
+      {{dropMessage}}
+    </div>
+
+    <treecontrol class="tree-light"
+                 tree-model="nodes"
+                 options="treeOptions"
+                 expanded-nodes="expandedNodes"
+                 on-selection="onNodeSelected(node, selected)">
+
+      <b ng-style="node.selected ? { 'color':'#FF0000'} : { 'color':'#00'}">{{node.label}}</b>{{node.value}}
+
+    </treecontrol>
+
+  </div>
+
+  <br/>
+    
+  <button type="button" class="btn btn-default" ng-click="onUpload()">Upload</button>
+
+  <br/>
+  <br/>
+
+  <div ng-repeat="node in uploads">
+      <div class="progress">
+          <div class="bar"  ng-style="{'width':node.progress}">
+
+          </div>
+          <span>
+            {{node.progressText}}
+            <a ng-if="node.href !== null" href="{{node.href}}" target="_blank" style="color:#FFFFFF">
+                View
+            </a>
+          </span>
+
+      </div>
+  </div>
+
+  <div style="min-height: 100px">
+  </div>
+
+</div>

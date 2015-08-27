@@ -1,0 +1,97 @@
+
+<div class="console-background">
+
+</div>
+
+<div class="console">
+
+  <div class="box" id="extension-dropzone">
+
+    <treecontrol class="tree-light"
+                 tree-model="extensionNodes"
+                 options="treeOptions"
+                 expanded-nodes="expandedExtensionNodes"
+                 on-selection="onNodeSelected(node, selected)">
+
+      <b ng-style="node.selected ? { 'color':'#FF0000'} : { 'color':'#00'}">{{node.label}}</b>{{node.value}}
+
+    </treecontrol>
+
+  </div>
+
+  <br>
+
+
+  <div style="width: 100%; height: 200px">
+
+    <div class="flow-error">
+      Your browser, unfortunately, is not supported by Flow.js. The library requires support for
+      <a href="http://www.w3.org/TR/FileAPI/">
+        the HTML5 File API
+      </a>
+      along with
+      <a href="http://www.w3.org/TR/FileAPI/#normalization-of-params">
+        file slicing
+      </a>.
+    </div>
+
+    <div id="extDrop" class="flow-drop">
+
+      {{extDropMessage}}
+
+        <treecontrol class="tree-light"
+             tree-model="newExtensionNodes"
+             options="treeOptionsNewExt"
+             expanded-nodes="expandedNewExtensionNodes"
+             on-selection="onNodeSelected(node, selected)">
+
+            <b ng-style="node.selected ? { 'color':'#FF0000'} : { 'color':'#00'}">{{node.label}}</b>{{node.value}}
+
+        </treecontrol>
+
+    </div>
+
+    <br/>
+      
+    <button type="button" class="btn btn-default" ng-click="upload()"> Upload </button>    
+
+    <br/>        
+        
+    <div class="flow-progress">
+      <table>
+        <tr>
+          <td width="100%">
+            <div class="progress-container">
+              <div class="progress-bar">
+              </div>
+            </div>
+          </td>
+
+          <td class="progress-text" nowrap="nowrap">
+          </td>
+
+          <td class="progress-pause" nowrap="nowrap">
+
+            <a href="" onclick="flow.upload(); return(false);" class="progress-resume-link">
+              <img src="img/resume.png" title="Resume upload" />
+            </a>
+            <a href="" onclick="flow.pause(); return(faindex.jslse);" class="progress-pause-link">
+              <img src="img/pause.png" title="Pause upload" />
+            </a>
+            <a href="" ng-click="onCancelUpload" class="progress-cancel-link">
+
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <ul class="flow-list"></ul>
+
+  </div>
+
+
+  <div style="min-height: 100px">
+  </div>
+
+</div>
