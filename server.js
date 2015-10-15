@@ -16,28 +16,23 @@
 // UNINTERRUPTED OR ERROR FREE.
 /////////////////////////////////////////////////////////////////////////////////
 
-var credentials = require('./config/credentials');
-var ViewAndDataClient = require('./routes/view-and-data-client');
-
-var viewAndDataClient = new ViewAndDataClient(
-  credentials.BaseUrl,
-  credentials.ConsumerKey,
-  credentials.SecretKey);
-
+var lmvConfig = require('./config/config-view-and-data');
 var collaboration = require('./routes/collaboration');
+var credentials = require('./config/credentials');
 var dbConnector = require('./routes/dbConnector');
 var config = require('./config/config-server');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var bodyParser = require('body-parser');
 var favicon = require('serve-favicon');
+var Lmv = require('view-and-data');
 var passport = require('passport');
 var express = require('express');
 
 var app = express();
 
 app.use(config.host, express.static(__dirname + '/www'));
-app.use(favicon(__dirname + '/www/img/favicon.ico'));
+app.use(favicon(__dirname + '/www/img/adsk/adsk-32x32-32.png'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -60,6 +55,10 @@ app.use(config.host + '/embed', express.static(
 app.use(config.host + '/collaboration', express.static(
   __dirname + '/www/js/apps/collaboration/collaboration.html'));
 
+function onError(error) {
+  console.log(error);
+};
+
 var connector = new dbConnector(config);
 
 connector.initializeDb(
@@ -71,36 +70,25 @@ connector.initializeDb(
     app.use(config.host + '/api/extensions', require('./routes/api/extensions')(db));
     app.use(config.host + '/api/thumbnails', require('./routes/api/thumbnails')(db));
 
-    viewAndDataClient.onInitialized(function() {
+    var lmv = new Lmv(lmvConfig);
 
-      app.use(config.host + '/api/token', require('./routes/api/token')(viewAndDataClient));
-      app.use(config.host + '/api/models', require('./routes/api/models')(db, viewAndDataClient));
+    lmv.initialise().then(function() {
 
-      //tools API only for dev
-      //app.use(config.host + '/api/tools', require('./routes/api/tools')(db, viewAndDataClient));
-    });
+        app.use(config.host + '/api/token', require('./routes/api/token')(lmv));
+        app.use(config.host + '/api/models', require('./routes/api/models')(db, lmv));
 
-  }, function(error) {
-
-    console.log(error);
-  });
+        app.use(config.host + '/api/tools', require('./routes/api/tools')(db, lmv));
+      },
+      onError);
+  },
+  onError);
 
 app.set('port', process.env.PORT || 3000);
 
 var server = app.listen(app.get('port'), function() {
 
-  new collaboration(server, 5002);
+  new collaboration(server, config.collaboration.port);
 
-  console.log('Server listening on port ' +
-    server.address().port);
+  console.log('Server listening on: ');
+  console.log(server.address());
 });
-
-function checkAuth(req, res, next){
-
-  if(req.user)
-    next();
-  else {
-    res.status(401);
-    return res.send('You are not authorized to view this page');
-  }
-}

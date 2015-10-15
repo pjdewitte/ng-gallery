@@ -40,7 +40,6 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
         configClient.ApiURL + '/token');
     }])
 
-
   ///////////////////////////////////////////////////////////////////////////
   //
   //
@@ -59,9 +58,8 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
 
       lightPreset: 8,
       viewerType: 'GuiViewer3D',
-      qualityLevel: [true, true],
-      navigationTool:'freeorbit',
-      progressiveRendering: true,
+      qualityLevel: [false, true],
+      progressiveRendering: false,
       backgroundColor:[3,4,5, 250, 250, 250]
     };
     

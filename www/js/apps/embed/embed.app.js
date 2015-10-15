@@ -56,15 +56,13 @@ angular.module('Autodesk.ADN.NgGallery.App.Embed',
 
       lightPreset: 8,
       viewerType: 'GuiViewer3D',
-      qualityLevel: [true, true],
-      navigationTool:'freeorbit',
-      progressiveRendering: true,
-      backgroundColor:[3,4,5, 250, 250, 250]
+      qualityLevel: [false, true],
+      progressiveRendering: false
     };
 
     ///////////////////////////////////////////////////////////////////
     // Allows loading special viewer config:
-    //http://viewer.autodesk.io/node/ng-gallery/embed?id=54464d43af600b5c0a87254a&
+    //http://viewer.autodesk.io/node/gallery/embed?id=54464d43af600b5c0a87254a&
     //viewerConfig=%27{"viewerType":"Viewer3D","lightPreset":"0","progressiveRendering":"false"}%27
     //
     ///////////////////////////////////////////////////////////////////

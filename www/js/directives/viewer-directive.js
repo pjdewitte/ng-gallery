@@ -19,126 +19,122 @@
 
 angular.module('Autodesk.ADN.Toolkit.Directive.Viewer', [])
 
-  ///////////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////////
-  .directive('adnViewerContainer', function () {
+///////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////
+.directive('adnViewerContainer', function () {
 
-    function link($scope, $element, $attributes) {
+  function link($scope, $element, $attributes) {
 
-      $scope.viewerFactory =
-        new Autodesk.ADN.Toolkit.Viewer.ViewerFactory(
-          $attributes.url,
-          ($attributes.hasOwnProperty('config') ?
-            JSON.parse($attributes.config) :
-          {}));
+    $scope.viewerFactory =
+      new Autodesk.ADN.Toolkit.Viewer.ViewerFactory(
+        $attributes.url,
+        ($attributes.hasOwnProperty('config') ?
+          JSON.parse($attributes.config) :
+        {}));
 
-      $scope.viewerFactory.onInitialized(function() {
+    $scope.viewerFactory.onInitialized(function () {
 
-        $scope.$broadcast('factoryInitialized',{
-          viewerFactory: $scope.viewerFactory
-        });
-
-        $scope.onViewerFactoryInitialized({
-          factory: $scope.viewerFactory
-        });
-
-        $attributes.$observe('urn', function (urn) {
-
-          if (urn.length) {
-
-            $scope.viewerFactory.getViewablePath(
-              urn,
-              function (pathInfoCollection) {
-
-                $scope.onViewablePath({
-                  pathInfoCollection: pathInfoCollection
-                });
-              },
-              function (error) {
-                $scope.onError({
-                  error: error
-                });
-              });
-          }
-        });
+      $scope.$broadcast('factoryInitialized', {
+        viewerFactory: $scope.viewerFactory
       });
-    }
 
-    function controller ($scope) {
+      $scope.onViewerFactoryInitialized({
+        factory: $scope.viewerFactory
+      });
 
-      this.getViewerFactory = function() {
+      $attributes.$observe('urn', function (urn) {
 
-        return $scope.viewerFactory;
-      };
-    }
+        if (urn.length) {
 
-    return {
+          $scope.viewerFactory.getViewablePath(
+            urn,
+            function (pathInfoCollection) {
 
-      scope: {
-        url: '@',
-        urn: '@',
-        onViewablePath: '&',
-        onViewerFactoryInitialized: '&',
-        onError: '&'
-      },
+              $scope.onViewablePath({
+                pathInfoCollection: pathInfoCollection
+              });
 
-      link: link,
-      replace: true,
-      restrict: 'E',
-      transclude: true,
-      controller: controller,
-      template: '<div style="overflow:auto;position:relative;{{style}}">' +
-      '<div ng-transclude></div><div/>'
+              $scope.$broadcast('forceApply', {
+
+              });
+
+            },
+            function (error) {
+              $scope.onError({
+                error: error
+              });
+            });
+        }
+      });
+    });
+  }
+
+  function controller($scope) {
+
+    this.getViewerFactory = function () {
+
+      return $scope.viewerFactory;
     };
-  })
+  }
 
-  ///////////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////////
-  .directive('adnViewer', function () {
+  return {
 
-    function postlink($scope, $element, $attributes, parentController) {
+    scope: {
+      url: '@',
+      urn: '@',
+      onViewablePath: '&',
+      onViewerFactoryInitialized: '&',
+      onError: '&'
+    },
 
-      function onFactoryInitialized(viewerFactory) {
+    link: link,
+    replace: true,
+    restrict: 'E',
+    transclude: true,
+    controller: controller,
+    template: '<div style="overflow:auto;position:relative;{{style}}">' +
+    '<div ng-transclude></div><div/>'
+  };
+})
 
-        var config = ($attributes.hasOwnProperty('config') ?
-          JSON.parse($attributes.config) : {});
+///////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////
+.directive('adnViewer', function () {
 
-        $scope.viewer = viewerFactory.createViewer(
-          $element[0],
-          config);
+  function postlink($scope, $element, $attributes, parentController) {
 
-        $scope.viewer.id =
-          $scope.viewer.container.parentElement.id;
+    function onFactoryInitialized(viewerFactory) {
 
-        $scope.onViewerInitialized({
+      var config = ($attributes.hasOwnProperty('config') ?
+        JSON.parse($attributes.config) : {});
+
+      $scope.viewer = viewerFactory.createViewer(
+        $element[0],
+        config);
+
+      $scope.onViewerInitialized({
+        viewer: $scope.viewer
+      });
+
+      $scope.$on('$destroy', function () {
+
+        $scope.onDestroy({
           viewer: $scope.viewer
         });
+      });
 
-        $scope.$on('$destroy', function () {
+      $scope.$on('forceApply', function (event, data) {
 
-          $scope.onDestroy({
-            viewer: $scope.viewer
-          });
-        });
+        $scope.$apply();
+      });
 
-        $attributes.$observe('path', function (path) {
+      $attributes.$observe('path', function (path) {
 
-          if (path.length) {
-
-            $scope.viewer.load(path);
-
-            $scope.onPathLoaded({
-              viewer: $scope.viewer,
-              path: path
-            });
-          }
-        });
-
-        if (typeof path !== 'undefined' && path.length) {
+        if (path.length) {
 
           $scope.viewer.load(path);
 
@@ -147,41 +143,43 @@ angular.module('Autodesk.ADN.Toolkit.Directive.Viewer', [])
             path: path
           });
         }
-      }
-
-      var viewerFactory = parentController.getViewerFactory();
-
-      if(viewerFactory) {
-
-        onFactoryInitialized(viewerFactory);
-      }
-      else {
-
-        $scope.$on('factoryInitialized', function (event, data) {
-
-          onFactoryInitialized(data.viewerFactory);
-        });
-      }
+      });
     }
 
-    return {
+    $scope.viewer = null;
 
-      scope: {
+    var viewerFactory = parentController.getViewerFactory();
 
-        path: '@',
-        onDestroy: '&',
-        onPathLoaded: '&',
-        onViewerInitialized: '&',
-        onError: '&'
-      },
-      link: {
-        post: postlink
-      },
-      restrict: 'E',
-      replace: true,
-      require: '^adnViewerContainer',
-      template: '<div style="overflow:auto;position:relative;{{style}}"> <div/>'
-    };
-  });
+    if (viewerFactory) {
 
+      onFactoryInitialized(viewerFactory);
+    }
+    else {
+
+      $scope.$on('factoryInitialized', function (event, data) {
+
+        onFactoryInitialized(data.viewerFactory);
+      });
+    }
+  }
+
+  return {
+
+    scope: {
+
+      path: '@',
+      onDestroy: '&',
+      onPathLoaded: '&',
+      onViewerInitialized: '&',
+      onError: '&'
+    },
+    link: {
+      post: postlink
+    },
+    restrict: 'E',
+    replace: true,
+    require: '^adnViewerContainer',
+    template: '<div style="overflow:auto;position:relative;{{style}}"> <div/>'
+  };
+});
 

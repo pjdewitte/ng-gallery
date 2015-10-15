@@ -81,7 +81,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Home', [])
 
                           try {
 
-
                             // set as default
                             model.thumbnail = "img/adsk/adsk-128x128-32.png";
 
@@ -92,7 +91,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Home', [])
                                 model.thumbnail =
                                   "data:image/png;base64," + response.thumbnail.data;
                               });
-
 
                             var fileId = ViewAndData.client.fromBase64(model.urn);
 

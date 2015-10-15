@@ -46,8 +46,8 @@ angular.module('Autodesk.ADN.NgGallery.View.Upload',
   ///////////////////////////////////////////////////////////////////////////
   .controller('Autodesk.ADN.NgGallery.View.Upload.Controller',
 
-  ['$scope', 'AppState', 'ViewAndData', 'Toolkit', 'Model',
-    function($scope, AppState, ViewAndData, Toolkit, Model) {
+  ['$scope', '$http', 'AppState', 'ViewAndData', 'Toolkit', 'Model',
+    function($scope, $http, AppState, ViewAndData, Toolkit, Model) {
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -62,6 +62,11 @@ angular.module('Autodesk.ADN.NgGallery.View.Upload',
         });
       }
 
+      $scope.flowIdentifier = function (file) {
+
+        return file.name;
+      }
+
       ///////////////////////////////////////////////////////////////////
       //
       //
@@ -72,53 +77,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Upload',
 
       AppState.showNavbar = true;
 
-      var dropzone = document.getElementById('upload-dropzone');
-
-      dropzone.addEventListener('dragover', function (e) {
-        e.preventDefault();
-        e.currentTarget.classList.add('over-line');
-      });
-
-      dropzone.addEventListener('dragleave', function (e) {
-        e.preventDefault();
-        e.currentTarget.classList.remove('over-line');
-      });
-
-      dropzone.addEventListener('drop', function (e) {
-
-        e.stopPropagation();
-        e.preventDefault();
-
-       for(var i=0; i<e.dataTransfer.files.length; ++i) {
-
-          var file = e.dataTransfer.files[i];
-
-          createFileNode(file, $scope.selectedNode);
-        }
-
-        e.currentTarget.classList.remove('over-line');
-
-        $scope.dropMessage = "";
-      });
-
-      ///////////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////////
-      function createNode(label, parent) {
-
-        var node = {
-          label: label,
-          children: [],
-          parent: parent,
-          selectable: false
-        };
-
-        if (parent)
-          parent.children.push(node);
-
-        return node;
-      }
+      $scope.uploader = {};
 
       ///////////////////////////////////////////////////////////////////////
       //
@@ -187,43 +146,9 @@ angular.module('Autodesk.ADN.NgGallery.View.Upload',
           return;
         }
 
-        $scope.uploads = $scope.nodes;
+        $scope.uploader.flow.upload();
 
         reset();
-
-        ViewAndData.client.getBucketDetails(
-          configClient.bucketName,
-          function(response) {
-
-            $scope.uploads.forEach(function(node) {
-
-              uploadFile(node);
-            });
-          },
-          function(error) {
-
-            console.log(error);
-
-            if( error.reason === "Bucket not found" ) {
-
-              ViewAndData.client.createBucket(
-                {
-                  bucketKey : configClient.bucketName,
-                  servicesAllowed: {},
-                  policy: "persistent"
-                },
-                function(response) {
-
-                  $scope.uploads.forEach(function(node) {
-
-                    uploadFile(node);
-                  });
-                },
-                function(error) {
-                  console.log(error);
-                });
-            }
-          });
       };
 
       ///////////////////////////////////////////////////////////////////////
@@ -266,162 +191,9 @@ angular.module('Autodesk.ADN.NgGallery.View.Upload',
       }
 
       ///////////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////////
-      function uploadFile(node) {
-
-        var file = node.file;
-
-        node.progressText = file.name + ' - Uploading ...';
-
-        console.log("Uploading file: " + file.name);
-
-        var id = Toolkit.guid();
-
-        ViewAndData.client.uploadFile(
-          file,
-          configClient.bucketName,
-          id + '.' + getFileExt(file),
-
-          function (uploadResponse) {
-
-            var fileId = uploadResponse.objectId;
-
-            node.progressText = file.name + ' - Upload successful ...';
-
-            console.log("Upload successful: " + uploadResponse.file.name);
-
-            ViewAndData.client.register(fileId,
-              function(registerResponse) {
-
-                node.progressText = file.name +
-                  ' - Registration: ' +
-                  registerResponse.Result;
-
-                console.log("Registration result: " +
-                  registerResponse.Result);
-
-                var modelName = getFileName(uploadResponse.file);
-
-                if (registerResponse.Result === "Success") {
-
-                  var modelInfo = {
-                    name: modelName,
-                    fileId: fileId,
-                    urn: ViewAndData.client.toBase64(fileId),
-                    states: [],
-                    sequence: []
-                  };
-
-                  Model.save(JSON.stringify(modelInfo), function (modelResponse) {
-
-                    console.log("New model added to DB: " +
-                      JSON.stringify(modelResponse));
-
-                    var url = 'http://' + window.location.host +
-                      configClient.host +
-                      '/#/viewer?id=' + modelResponse._id;
-
-                    checkTranslationStatus(
-                      fileId,
-                      1000 * 60 * 60, //60 mins timeout,
-                      function(progress) {
-
-                        node.progress = getProgress(progress);
-
-                        node.progressText = modelName + " - Translation: " + progress;
-
-                        console.log('Progress ' + modelName + ': ' + progress);
-                      },
-                      function (viewable) {
-
-                        node.progressText += ' - ';
-
-                        node.href = url;
-
-                        console.log("Translation successful: " +
-                          uploadResponse.file.name);
-
-                        console.log(url);
-                      });
-                  });
-                }
-              },
-              function(error) {
-
-                node.progressText = file.name +
-                  ' - Registration error: ' + error;
-
-                console.log("Registration error: " + error);
-              });
-          },
-          function (error) {
-
-            node.progressText = file.name +
-              ' - Upload error: ' + error;
-
-            console.log("Upload error: " + error);
-          });
-      }
-
-      ///////////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////////
-      function checkTranslationStatus(fileId, timeout, onUpdate, onSuccess) {
-
-        var startTime = new Date().getTime();
-
-        var timer = setInterval(function () {
-
-          var dt = (new Date().getTime() - startTime) / timeout;
-
-          if (dt >= 1.0) {
-
-            clearInterval(timer);
-          }
-          else {
-
-            ViewAndData.client.getViewable(
-              fileId,
-              function (response) {
-
-                onUpdate(response.progress);
-
-                if (response.progress === 'complete') {
-                  clearInterval(timer);
-                  onSuccess(response);
-                }
-              },
-              function (error) {
-
-              });
-          }
-        }, 5000);
-      }
-
-      ///////////////////////////////////////////////////////////////////////
       // Utilities
       //
       ///////////////////////////////////////////////////////////////////////
-      function getFileExt(file) {
-
-        var res = file.name.split('.');
-
-        return res[res.length - 1];
-      }
-
-      function getFileName(file) {
-
-        var ext = getFileExt(file);
-
-        var name = file.name.substring(0,
-          file.name.length - ext.length - 1);
-
-        return name;
-      }
-
       function getProgress(progress) {
 
         if(progress === 'complete')
@@ -431,6 +203,151 @@ angular.module('Autodesk.ADN.NgGallery.View.Upload',
 
         return res[0] + '%';
       }
+
+      ///////////////////////////////////////////////////////////////////////
+      // upload events
+      //
+      ///////////////////////////////////////////////////////////////////////
+      var nodeMap = {};
+
+      $scope.onFileAdded = function($file, $event, $flow) {
+
+        $scope.dropMessage = "";
+
+        var node = createFileNode($file, $scope.selectedNode);
+
+        nodeMap[$file.name] = node;
+
+        $scope.uploads.push(node);
+      }
+
+      $scope.onFilesAdded = function($files, $event, $flow) {
+
+        //console.log($files)
+      }
+
+      $scope.onFileSuccess = function($file, $message, $flow) {
+
+        var node = nodeMap[$file.name];
+
+        node.progressText = $file.name + ' - Queuing for translation ...';
+
+        node.progress = '0%';
+
+        $http.post(configClient.ApiURL +
+          '/models/register/' + $file.name).then(
+          function(response){
+
+            var urn = response.data.urn;
+
+            checkTranslationStatus($file.name,
+              urn,
+              1000 * 60 * 60 * 24, //24h timeout
+              2000,
+              progressCallback).then(
+              function(statusResponse) {
+
+                var interval = setInterval(function () {
+
+                  $http.get(configClient.ApiURL +
+                  '/models?field=urn&value=' + urn).then(
+                    function (response) {
+
+                      if(response.data.length){
+
+                        var model = response.data[0];
+
+                        node.progressText += ' -';
+
+                        node.href = 'http://' + window.location.host +
+                          configClient.host + '/#/viewer?id=' + model._id;
+
+                        clearInterval(interval);
+                      };
+                    });
+                }, 2000);
+              });
+          });
+      }
+
+      $scope.onFileProgress = function($file, $flow) {
+
+        var node = nodeMap[$file.name];
+
+        node.progress = ($file.progress() * 100).toFixed(1) + '%';
+
+        node.progressText = $file.name +
+          ' - Uploading (' + node.progress + ')';
+      }
+
+      $scope.onUploadComplete = function() {
+
+        //console.log($scope.uploader.flow.files);
+      }
+
+      $scope.onProgress = function() {
+
+
+      }
+
+      ///////////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////////
+      function progressCallback(filename, progress) {
+
+        var node = nodeMap[filename];
+
+        node.progress = getProgress(progress);
+
+        node.progressText = filename +
+          ' - Translating (' + node.progress + ')';
+      }
+
+      function checkTranslationStatus(
+        filename, urn, timeout, period, progressCallback) {
+
+        var promise = new Promise(function(resolve, reject) {
+
+          var startTime = new Date().getTime();
+
+          var timer = setInterval(function () {
+
+            var dt = (new Date().getTime() - startTime) / timeout;
+
+            if (dt >= 1.0) {
+
+              clearInterval(timer);
+
+              reject({error: 'timeout'});
+            }
+            else {
+
+              var fileId = ViewAndData.client.fromBase64(urn);
+
+              ViewAndData.client.getViewable(fileId,
+                function (response) {
+
+                  if(progressCallback)
+                    progressCallback(filename, response.progress);
+
+                  if (response.progress === 'complete') {
+
+                    clearInterval(timer);
+
+                    resolve(filename);
+                  }
+                },
+                function (error) {
+
+                  //reject(error);
+                });
+            }
+          }, period);
+        });
+
+        return promise;
+      };
 
       ///////////////////////////////////////////////////////////////////////
       //

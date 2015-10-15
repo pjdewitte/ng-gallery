@@ -256,22 +256,33 @@ var flowFactory = {
 
             sourceStream.on('end', function () {
 
+              if(options.deleteSource){
+
+                fs.unlink(chunkFilename);
+              }
+
               if(options.useChunks) {
                 // When the chunk is fully streamed,
                 // jump to the next one
                 pipeChunkRec(number + 1);
               }
               else {
-                if (options.end) writableStream.end();
-                if (options.onDone) options.onDone();
+                if (options.end)
+                  writableStream.end();
+
+                if (options.onDone)
+                  options.onDone(fileId, options);
               }
             });
           }
           else {
 
             // When all the chunks have been piped, end the stream
-            if (options.end) writableStream.end();
-            if (options.onDone) options.onDone();
+            if (options.end)
+              writableStream.end();
+
+            if (options.onDone)
+              options.onDone(fileId, options);
           }
         });
       };

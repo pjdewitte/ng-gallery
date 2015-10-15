@@ -914,7 +914,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       {shadow: true});
 
     var w = 300;
-    var h = 210;
+    var h = 195;
 
     var cw = $(viewer.container).width();
     var ch = $(viewer.container).height();

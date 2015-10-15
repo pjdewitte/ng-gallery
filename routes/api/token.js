@@ -15,10 +15,12 @@
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
 /////////////////////////////////////////////////////////////////////////////////
+var credentials = require('../../config/credentials');
 var express = require('express');
+var request = require('request');
 var cors = require('cors');
 
-module.exports = function(viewAndDataClient) {
+module.exports = function(lmv) {
 
     var router = express.Router();
 
@@ -28,10 +30,16 @@ module.exports = function(viewAndDataClient) {
     ///////////////////////////////////////////////////////////////////////////////
     router.get('/', function (req, res) {
 
-        var response = viewAndDataClient.getTokenResponse();
+        lmv.getToken().then(
+          function(response){
 
-        res.status((response ? 200 : 404));
-        res.json(response);
+              res.json(response);
+          },
+          function(error){
+
+              res.status(error.statusCode || 404);
+              res.json(error);
+          });
     });
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -40,15 +48,47 @@ module.exports = function(viewAndDataClient) {
     ///////////////////////////////////////////////////////////////////////////////
     var corsOptions = {
 
-        origin: '*' //http://adndevblog.typepad.com'
+        origin: 'http://adndevblog.typepad.com'
     };
 
     router.get('/cors', cors(corsOptions), function (req, res, next) {
 
-        var response = viewAndDataClient.getTokenResponse();
+        lmv.getToken().then(
+          function(response){
 
-        res.status((response ? 200 : 404));
-        res.json(response);
+              res.json(response);
+          },
+          function(error){
+
+              res.status(error.statusCode || 404);
+              res.json(error);
+          });
+    });
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //
+    //
+    ///////////////////////////////////////////////////////////////////////////////
+    router.get('/translator', function (req, res) {
+
+        var params = {
+            client_id: credentials.translator.client_id,
+            client_secret:credentials.translator.client_secret,
+            grant_type: 'client_credentials',
+            scope: 'http://api.microsofttranslator.com'
+        }
+
+        request.post(
+          credentials.translator.base_url,
+          { form: params },
+
+          function (error, response, body) {
+
+              if (!error && response.statusCode == 200) {
+
+                  res.send(JSON.parse(body));
+              }
+          });
     });
 
     return router;

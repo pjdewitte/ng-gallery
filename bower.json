@@ -31,7 +31,6 @@
     "requirejs":              "2.1.17",
     "select2":                "3.4.8",
     "raf.js":                 "0.0.4",
-    "flow.js":                "2.9.0",
     "view-and-data-toolkit":  "*"
   },
 

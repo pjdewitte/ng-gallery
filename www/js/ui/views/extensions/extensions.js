@@ -149,7 +149,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Extensions',
         });
 
         $scope.extDropMessage =
-          "Drop extension file here, then drop dependency" +
+          "Drop extension file here (.js), then drop dependency" +
           " files if needed and hit Upload...";
 
         $scope.extension = null;
@@ -381,8 +381,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Extensions',
                 );
               },
               function (error) {
-
-                Upload.reset();
 
                 console.log(error);
               });

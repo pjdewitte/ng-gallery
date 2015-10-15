@@ -4,18 +4,22 @@
 
 var configClient = {
 
-  host: '/node/ng-gallery',
-  bucketName: 'ng-gallery-persistent-bucket',
+  host: '/node/gallery',
   viewAndDataUrl: 'https://developer.api.autodesk.com',
-  ApiURL: "http://" + window.location.host +'/node/ng-gallery/api'
+  ApiURL: "http://" + window.location.host +'/node/gallery/api',
+  collaboration:{
+    port: 5002
+  }
 };
 
 var configClientStg = {
 
-  host: '/node/ng-gallery-stg',
-  bucketName: 'ng-gallery-persistent-bucket-stg',
+  host: '/node/gallery-stg',
   viewAndDataUrl: 'https://developer-stg.api.autodesk.com',
-  ApiURL: "http://" + window.location.host +'/node/ng-gallery-stg/api'
+  ApiURL: "http://" + window.location.host +'/node/gallery-stg/api',
+  collaboration:{
+    port: 5002
+  }
 };
 
 module.exports = configClient;

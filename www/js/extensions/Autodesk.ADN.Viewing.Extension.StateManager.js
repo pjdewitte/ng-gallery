@@ -190,7 +190,7 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
     $(this.container).css({
       'right':'0px',
       'top':'0px',
-      'width':'380px',
+      'width':'345px',
       'height':'400px',
       'min-width':'10px',
       'min-height':'10px',
@@ -465,10 +465,6 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
 
   Autodesk.ADN.Viewing.Extension.StateManager.Panel.prototype.onTitleDoubleClick = function (event) {
 
-    $(this.container).css({
-      'width':'100px',
-      'height':'300px'
-    });
   };
 
   Autodesk.ADN.Viewing.Extension.StateManager.Panel.prototype.initialize = function()
@@ -503,13 +499,12 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
     '}',
 
     'div.state-manager-panel-controls-container {',
-      'max-height: 135px;',
       'margin-bottom: 10px;',
       'overflow: auto;',
     '}',
 
     'div.state-manager-panel-list-container {',
-      'height: calc(100% - 110px);',
+      'height: calc(100% - 100px);',
       'overflow: auto;',
     '}',
 

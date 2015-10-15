@@ -15,15 +15,17 @@
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
 /////////////////////////////////////////////////////////////////////////////////
-
 var transport = require('nodemailer-direct-transport');
 var config = require('../../config/config-server');
+var multipart = require('connect-multiparty');
 var nodemailer = require('nodemailer');
+var flowFactory = require('../flow');
 var express = require('express');
 var request = require('request');
 var mongo = require('mongodb');
+var fs = require('fs');
 
-module.exports = function(db, viewAndDataClient) {
+module.exports = function(db, lmv) {
 
   var router = express.Router();
 
@@ -46,10 +48,279 @@ module.exports = function(db, viewAndDataClient) {
       })});
   });
 
-  ///////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////
   //
   //
-  ///////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////
+  router.post('/upload',
+    multipart(),
+    function (req, res) {
+
+      if (!req.isAuthenticated()) {
+
+        res.status(401); //Unauthorized
+        res.send({'error': 'Unauthorized'});
+        return;
+      }
+
+      var flow = flowFactory.createFlow(
+        'uploads/temp/',
+        'models');
+
+      flow.post(req, {useChunks: true},
+        function (status,
+                  filename,
+                  original_filename,
+                  identifier) {
+
+          res.status(status).send();
+        });
+    });
+
+  /////////////////////////////////////////////////////////////////////
+  //
+  //
+  /////////////////////////////////////////////////////////////////////
+  var keyMap = {};
+
+  var host =
+
+  router.post('/register/:filename', function (req, res) {
+
+    host = req.query.host;
+
+    var filename =  req.params.filename;
+
+    var stream = fs.createWriteStream(
+      'uploads/temp/models/' + filename);
+
+    var flow = flowFactory.createFlow(
+      'uploads/temp/',
+      'models');
+
+    var objectKey = guid() + '.' + getFileExt(filename);
+
+    var fileId = 'urn:adsk.objects:os.object:' +
+      config.bucketKey + '/' +
+      objectKey;
+
+    keyMap[objectKey] = {
+      name: getFileName(filename),
+      fileId:  fileId,
+      urn: lmv.toBase64(fileId),
+      states: [],
+      sequence: [],
+      author: req.user
+    };
+
+    flow.write(filename, stream, {
+      end: true,
+      useChunks: true,
+      deleteSource: true,
+      objectKey: objectKey,
+      onDone: onRegisterFile
+    });
+
+    res.json({urn: keyMap[objectKey].urn});
+  });
+
+  function onRegisterFile(file, options) {
+
+    var bucketData = {
+      bucketKey : config.bucketKey,
+      servicesAllowed: {},
+      policy: 'persistent'
+    };
+
+    lmv.getBucket(config.bucketKey, true, bucketData).then(
+      function(response) {
+
+        var filename = 'uploads/temp/models/' + file;
+
+        lmv.resumableUpload(
+          filename,
+          config.bucketKey,
+          options.objectKey).then(
+          function(results){
+
+            fs.unlink(filename);
+
+            var fileId = results[0].objects[0].id;
+
+            onUploadCompleted(fileId);
+          },
+          function(error){
+
+            delete keyMap[options.objectKey];
+
+            fs.unlink(filename);
+
+            console.log(error);
+          });
+      },
+      function(error){
+
+        delete keyMap[options.objectKey];
+        console.log(error)
+      });
+  }
+
+  function onUploadCompleted(fileId) {
+
+    var objectKey = fileId.split('/')[1];
+
+    var urn = lmv.toBase64(fileId);
+
+    lmv.register(urn, true).then(
+      function(registerResponse){
+
+        if (registerResponse.Result === "Success") {
+
+          lmv.checkTranslationStatus(
+            urn,
+            1000 * 60 * 60 * 24, //24h timeout
+            10000).then(
+            onTranslationCompleted,
+            function (error) {
+
+              delete keyMap[objectKey];
+              console.log(error);
+            });
+        }
+      },
+      function(error){
+
+        delete keyMap[objectKey];
+        console.log(error);
+      });
+  }
+
+  function onTranslationCompleted(translationResponse) {
+
+    var urn = translationResponse.urn;
+
+    var fileId = lmv.fromBase64(urn);
+
+    var objectKey = fileId.split('/')[1];
+
+    var modelInfo = keyMap[objectKey];
+
+    delete keyMap[objectKey];
+
+    console.log("Translation successful: " +
+      modelInfo.name + " - FileId: " +
+      modelInfo.fileId);
+
+    db.collection('gallery.models', function (err, collection) {
+      collection.insert(
+        modelInfo,
+        {safe: true},
+
+        function (err, result) {
+
+          if (err) {
+
+            console.log(err);
+            return;
+          }
+
+          var url = 'http://' + host +
+            '/#/viewer?id=' + modelInfo._id;
+
+          var emailInfo = {
+            url: url,
+            email: getUserEmail(modelInfo.author)
+          };
+
+          sendMail(emailInfo, modelInfo);
+
+          lmv.getThumbnail(urn).then(
+            function(thumbnailResponse){
+
+              var thumbnailInfo = {
+                modelId: modelInfo._id,
+                data: thumbnailResponse
+              }
+
+              addThumbnail(thumbnailInfo);
+            },
+            function(error){
+
+              console.log(error);
+            });
+        });
+    });
+  }
+
+  ///////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////
+  function getFileExt(file) {
+
+    var res = file.split('.');
+
+    return res[res.length - 1];
+  }
+
+  function getFileName(file) {
+
+    var ext = getFileExt(file);
+
+    var name = file.substring(0,
+      file.length - ext.length - 1);
+
+    return name;
+  }
+
+  ///////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////
+  function guid() {
+
+    var d = new Date().getTime();
+
+    var guid = 'xxxx-xxxx-xxxx-xxxx'.replace(
+      /[xy]/g,
+      function (c) {
+        var r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c == 'x' ? r : (r & 0x7 | 0x8)).toString(16);
+      });
+
+    return guid;
+  }
+
+  ///////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////
+  function getUserEmail(user) {
+
+    switch (user.type) {
+
+      case "facebook":
+        return user.facebook.email;
+
+      case "google":
+        return user.google.email;
+
+      case "github":
+        return user.github.email;
+
+      case "linkedin":
+        return user.linkedin.email;
+
+      default:
+        return "";
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////
+  //
+  //
+  /////////////////////////////////////////////////////////////////////
   router.get('/:modelId', function (req, res) {
 
     var modelId = req.params.modelId;
@@ -124,127 +395,6 @@ module.exports = function(db, viewAndDataClient) {
   });
 
   ///////////////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////////////
-  router.post('/', function (req, res) {
-
-    if (!req.isAuthenticated()) {
-
-      res.status(401); //Unauthorized
-      res.send({'error': 'Unauthorized'});
-      return;
-    }
-
-    var host = req.query.host;
-
-    var modelInfo = req.body;
-
-    modelInfo.author = req.user;
-
-    db.collection('gallery.models', function (err, collection) {
-      collection.insert(
-        modelInfo,
-        {safe: true},
-
-        function (err, result) {
-
-          if (err) {
-
-            res.status(404);
-            res.send({'error': 'An error has occurred'});
-
-          } else {
-
-            res.send(modelInfo);
-
-            var url = 'http://' + host +
-              '/#/viewer?id=' + modelInfo._id;
-
-            var emailInfo = {
-              url: url,
-              email: getUserEmail(req.user)
-            };
-
-            checkTranslationStatus(
-              modelInfo.fileId,
-              1000 * 60 * 60 * 24, //24h timeout
-              function (viewable) {
-
-                sendMail(emailInfo.url, emailInfo.email, modelInfo);
-
-                getThumbnail(modelInfo);
-
-                console.log("Translation successful: " +
-                  modelInfo.name + " - FileId: " +
-                  modelInfo.fileId);
-              },
-              function (error) {
-
-                console.log(error);
-
-                collection.remove(
-                  { _id: new mongo.ObjectID(modelInfo._id) },
-                  null,
-                  function (error, result) {
-
-
-                  });
-              });
-          }
-        });
-    });
-  });
-
-  ///////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////
-  function getUserEmail(user) {
-
-    switch (user.type) {
-
-      case "facebook":
-        return user.facebook.email;
-
-      case "google":
-        return user.google.email;
-
-      case "github":
-        return user.github.email;
-
-      case "linkedin":
-        return user.linkedin.email;
-
-      default:
-        return "";
-    }
-  }
-
-  ///////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////
-  function getThumbnail(modelInfo) {
-
-    viewAndDataClient.getThumbnail(
-      modelInfo.fileId,
-      function (data) {
-
-        var thumbnail = {
-          modelId: modelInfo._id,
-          data: data
-        }
-
-        addThumbnail(thumbnail);
-      },
-      function (error) {
-
-        console.log('getThumbnail error:' + error)
-      });
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////
   // add new thumbnail
   //
   // thumbnail:
@@ -255,93 +405,44 @@ module.exports = function(db, viewAndDataClient) {
   // }
   //
   ///////////////////////////////////////////////////////////////////////////////
-  function addThumbnail(thumbnail) {
+  function addThumbnail(thumbnailInfo) {
 
     db.collection('gallery.thumbnails', function (err, collection) {
 
       collection.insert(
-        thumbnail,
+        thumbnailInfo,
         {safe: true},
-
         function (err, result) {
 
         });
     });
   };
 
-  ///////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////
-  function checkTranslationStatus(fileId,
-                                  timeout,
-                                  onSuccess,
-                                  onError) {
-
-    var startTime = new Date().getTime();
-
-    var timer = setInterval(function () {
-
-      var dt = (new Date().getTime() - startTime) / timeout;
-
-      if (dt >= 1.0) {
-
-        clearInterval(timer);
-        onError({error: 'timeout'});
-      }
-      else {
-
-        viewAndDataClient.getViewable(
-          fileId,
-          function (response) {
-
-            console.log(
-              'Progress ' +
-              fileId + ': ' +
-              response.progress);
-
-            if (response.progress === 'complete') {
-
-              clearInterval(timer);
-
-              onSuccess(response);
-            }
-          },
-          function (error) {
-
-            onError(error);
-          });
-      }
-    }, 10000);
-  };
-
   ///////////////////////////////////////////////////////////////////////////////
   //
   //
   ///////////////////////////////////////////////////////////////////////////////
-  function sendMail(url, email, modelInfo) {
+  function sendMail(emailInfo, modelInfo) {
 
     var transporter = nodemailer.createTransport(transport({
       name: 'smtp.orange.fr'
     }));
 
     var text = "You have successfully uploaded a new model:" +
-      "\n\nAuthor:\n" + modelInfo.author.name +
       "\n\nModel name:\n" + modelInfo.name +
       "\n\nFile Id:\n" + modelInfo.fileId +
       "\n\nModel urn:\n" + modelInfo.urn;
 
     var html = "You have successfully uploaded a new model:" +
-      "<br><br><b>Author:</b><br>" + modelInfo.author.name +
       "<br><br><b>Model name:</b><br>" + modelInfo.name +
       "<br><br><b>File Id:</b><br>" + modelInfo.fileId +
       "<br><br><b>Model urn:</b><br>" + modelInfo.urn +
-      "<br><br>" + '<a href=' + url + '>View on the Gallery</a>';
+      "<br><br>" + '<a href=' + emailInfo.url + '>View on the Gallery</a>';
 
     transporter.sendMail({
       from: 'View & Data API Gallery <no-reply@autodesk.com>',
       replyTo: 'no-reply@autodesk.com',
-      to: email,
+      to: emailInfo.email,
       subject: "Model upload notification",
       text: text,
       html: html

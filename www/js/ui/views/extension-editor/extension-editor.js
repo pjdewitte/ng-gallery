@@ -145,7 +145,8 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
       ///////////////////////////////////////////////////////////////////
       $scope.onDestroy = function (viewer) {
 
-        viewer.finish();
+        if(viewer)
+          viewer.finish();
       };
 
       ///////////////////////////////////////////////////////////////////
@@ -283,7 +284,7 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
           '',
           '   _this.unload = function () {',
           '',
-          '       viewer.setBackgroundColor(3,4,5, 250, 250, 250);',
+          '       viewer.setBackgroundColor(160,176,184, 190,207,216);',
           '',
           '       alert("Autodesk.ADN.Viewing.Extension.Basic unloaded");',
           '',

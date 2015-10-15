@@ -4,19 +4,33 @@
 
 var express = require('express');
 var request = require('request');
+var mongo = require('mongodb');
+var async = require('async');
+var oboe = require('oboe');
+var fs = require('fs');
 
-module.exports = function(db, viewDataClient) {
+module.exports = function(db, lmv) {
 
   var router = express.Router();
 
   ///////////////////////////////////////////////////////////////////////////////
-  // Used to get all models data
+  // Used to get all models data (/models?skip=$&limit=$)
   //
   ///////////////////////////////////////////////////////////////////////////////
   router.get('/models', function (req, res) {
 
+    var pageQuery = {};
+
+    var fieldQuery = {};
+
+    if (typeof req.query.skip !== 'undefined')
+      pageQuery.skip = req.query.skip;
+
+    if (typeof req.query.limit !== 'undefined')
+      pageQuery.limit = req.query.limit;
+
     db.collection('gallery.models', function (err, collection) {
-      collection.find()
+      collection.find(fieldQuery, pageQuery)
         .sort({name: 1}).toArray(
         function (err, items) {
 
@@ -28,6 +42,34 @@ module.exports = function(db, viewDataClient) {
           }
 
           res.json(response);
+        });
+    });
+  });
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.get('/models/:modelId', function (req, res) {
+
+    var modelId = req.params.modelId;
+
+    if (modelId.length !== 24) {
+      res.status(404);
+      res.send(null);
+      return;
+    }
+
+    db.collection('gallery.models', function (err, collection) {
+
+      collection.findOne(
+        {'_id': new mongo.ObjectId(modelId)},
+        {},
+
+        function (err, model) {
+
+          res.status((model ? 200 : 404));
+          res.jsonp(model);
         });
     });
   });
@@ -61,7 +103,7 @@ module.exports = function(db, viewDataClient) {
   ///////////////////////////////////////////////////////////////////////////////
   router.get('/users', function (req, res) {
 
-    db.collection('users', function (err, collection) {
+    db.collection('gallery.users', function (err, collection) {
       collection.find()
         .sort({name: 1}).toArray(
         function (err, items) {
@@ -78,10 +120,33 @@ module.exports = function(db, viewDataClient) {
     });
   });
 
-///////////////////////////////////////////////////////////////////////////////
-// Used to migrate the data model
-//
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  // Used to get all thumbnails
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.get('/thumbnails', function (req, res) {
+
+    db.collection('gallery.thumbnails', function (err, collection) {
+      collection.find()
+        .sort({name: 1}).toArray(
+        function (err, items) {
+
+          var response = items;
+
+          if (err) {
+            res.status(204); //HTTP 204: NO CONTENT
+            res.err = err;
+          }
+
+          res.json(response);
+        });
+    });
+  });
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // Used to migrate the data model
+  //
+  ///////////////////////////////////////////////////////////////////////////////
   function guid() {
 
     var d = new Date().getTime();
@@ -105,14 +170,6 @@ module.exports = function(db, viewDataClient) {
 
           models.forEach(function (model) {
 
-            //delete model.views;
-
-            //model.states = [];
-            //model.sequence = [];
-
-            //model.shareIds = {};
-            //model.shareIds[guid()] = {expire:null};
-
             collection.update(
               {'_id': model._id},
               model,
@@ -127,14 +184,11 @@ module.exports = function(db, viewDataClient) {
     });
   });
 
-///////////////////////////////////////////////////////////////////////////////
-//
-//
-///////////////////////////////////////////////////////////////////////////////
-
-  var mongo = require('mongodb');
-
-  router.get('/populate', function (req, res) {
+  ///////////////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.get('/thumbnails/generate', function (req, res) {
 
     db.collection('gallery.models', function (err, collection) {
       collection.find()
@@ -145,46 +199,23 @@ module.exports = function(db, viewDataClient) {
 
             items.forEach(function (model) {
 
-              //looks for missing thumbnails
-              thumbColl.findOne(
-                {'modelId': new mongo.ObjectId(model._id)},
-                {},
+              lmv.getThumbnail(
+                model.urn).then(
+                function (data) {
 
-                function (err, thumbnail) {
+                  var newThumbnail = {
+                    modelId: new mongo.ObjectId(model._id),
+                    data: data
+                  };
 
-                  viewDataClient.getThumbnail(
-                    model.fileId,
-                    function (data) {
+                  console.log('Updating thumbnail: ' + model.name);
 
-                      var newThumbnail = {
-                        modelId: model._id,
-                        data: data
-                      };
+                  thumbColl.update(
+                    {'modelId': newThumbnail.modelId},
+                    newThumbnail,
+                    {upsert: true},
+                    function (err3, cmdResult) {
 
-                      if (!thumbnail) {
-
-                        console.log('Creating thumbnail: ' + model.name);
-
-                        thumbColl.insert(
-                          newThumbnail,
-                          {safe: true},
-                          function (err, result) {
-                          });
-                      }
-                      else {
-
-                        console.log('Updating thumbnail: ' + model.name);
-
-                        thumbColl.update(
-                          {'modelId': new mongo.ObjectId(model._id)},
-                          newThumbnail,
-                          {safe: true},
-                          function (err3, cmdResult) {
-
-                          });
-                      }
-                    }, function(error) {
-                      console.log(error);
                     });
                 });
             });
@@ -200,6 +231,110 @@ module.exports = function(db, viewDataClient) {
         });
     });
   });
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // backup all collections
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.get('/backup', function (req, res) {
+
+    var dir = 'db-backup';
+
+    var collections = [
+      'gallery.models',
+      'gallery.users',
+      'gallery.extensions'];
+
+    collections.forEach(function(collection){
+
+      backupCollection(collection, dir + '/' + collection + '.json');
+    });
+
+    res.json('ok');
+  });
+
+  function backupCollection(collectionName, outputFile) {
+
+    db.collection(collectionName, function (err, collection) {
+      collection.find()
+        .sort({name: 1}).toArray(
+        function (err, items) {
+
+          if (err) {
+            return;
+          }
+
+          fs.writeFile(outputFile,
+            JSON.stringify(items, null, 2),
+            function(err) {
+              if(err) {
+                console.log(err);
+              } else {
+                console.log(outputFile + ' saved');
+              }
+            });
+        });
+    });
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // restore all collections
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.get('/restore', function (req, res) {
+
+    var dir = 'db-backup';
+
+    var collections = [
+      'gallery.models',
+      'gallery.users',
+      'gallery.extensions'
+    ];
+
+    collections.forEach(function(collection){
+
+      restoreCollection(collection, dir + '/' + collection + '.json');
+    });
+
+    res.json('ok');
+  });
+
+  function restoreCollection(collectionName, intputFile) {
+
+    db.collection(collectionName, function (err, collection) {
+      collection.find()
+        .sort({name: 1}).toArray(
+        function (err, items) {
+
+          oboe(fs.createReadStream(intputFile))
+            .on('node', {
+              '![*]': function(item) {
+
+                item._id = new mongo.ObjectID(item._id);
+
+                collection.update(
+                  {'_id': item._id},
+                  item,
+                  {upsert: true},
+                  function (err2, result) {
+
+                    if(err2)
+                      console.log('Failed to upsert item: ' + item._id);
+
+                    else
+                      console.log('Upsert item: ' + item._id);
+                  });
+              }
+            })
+            .on('done', function(){
+              console.log("Collection restored: " + collectionName);
+            })
+            .on('fail', function(){
+              console.log("Collection restore FAILED: " + collectionName);
+            });
+        });
+    });
+  }
 
   return router;
 }

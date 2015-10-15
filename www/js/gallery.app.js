@@ -95,6 +95,7 @@ angular.module('Autodesk.ADN.NgGallery.App',
     'ngRoute',
 
     // Libs
+    'flow',
     'ui.layout',
     'ui-layout-events',
     'ngMdIcons',

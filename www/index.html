@@ -3,6 +3,7 @@
 <html ng-app="Autodesk.ADN.NgGallery.App" ng-controller="Autodesk.ADN.NgGallery.App.Controller">
 
 <head>
+    <link rel='shortcut icon' type='image/x-icon' href='img/adsk/adsk-32x32-32.png'/>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width">
 
@@ -20,7 +21,8 @@
     <link rel="stylesheet" type="text/css" href="lib/ui-select/src/select2.css"/>
     <link rel="stylesheet" type="text/css" href="lib/ui-select/src/selectize.default.css">
 
-    <link rel="stylesheet" type="text/css" href="https://developer.api.autodesk.com/viewingservice/v1/viewers/style.css?v=v1.2.17"/>
+    <link rel="stylesheet" type="text/css" href="https://developer.api.autodesk.com/viewingservice/v1/viewers/style.css?v=v1.2.19">
+    <!--link rel="stylesheet" type="text/css" href="lib/adsk-viewer/style.css"-->
     <link rel="stylesheet" type="text/css" href="css/gallery-base-theme.css">
     <link rel="stylesheet" type="text/css" href="css/gallery-theme.css">
     <link rel="stylesheet" type="text/css" href="css/flow.css"/>
@@ -28,7 +30,7 @@
 
 </head>
 
-<body>
+<body flow-prevent-drop>
 
     <div ng-include="'js/ui/dialogs/about/about.html'"></div>
     <div ng-include="'js/ui/dialogs/embed/embed.html'"></div>
@@ -41,8 +43,12 @@
 
     </ng-view>
 
-    <script src="https://developer.api.autodesk.com/viewingservice/v1/viewers/three.min.js?v=v1.2.17"></script>
-    <script src="https://developer.api.autodesk.com/viewingservice/v1/viewers/viewer3D.js?v=v1.2.17"></script>
+    <script src="https://developer.api.autodesk.com/viewingservice/v1/viewers/three.min.js?v=v1.2.19"></script>
+    <script src="https://developer.api.autodesk.com/viewingservice/v1/viewers/viewer3D.min.js?v=v1.2.19"></script>
+
+    <!--script src="lib/adsk-local-viewer/three.min.js"></script>
+    <script src="lib/adsk-local-viewer/viewer3D.min.js"></script-->
+
     <script src="lib/bower_components/view-and-data-toolkit/dist/js/view-and-data-client-v1.min.js"></script>
     <script src="lib/bower_components/view-and-data-toolkit/dist/js/viewer.min.js"></script>
 
@@ -70,8 +76,10 @@
     <script src="lib/bower_components/dragula.js/dist/dragula.min.js"></script>
     <script src="lib/bower_components/async/dist/async.min.js"></script>
     <script src="lib/bower_components/flow.js/dist/flow.js"></script>
+    <script src="lib/bower_components/ng-flow/dist/ng-flow.min.js"></script>
     <script src="lib/bower_components/lodash/lodash.min.js"></script>
     <script src="lib/bower_components/lockr/lockr.min.js"></script>
+    <script src="lib/bower_components/es6-promise/promise.min.js"></script>
     <script src="lib/bower_components/requirejs/require.js"></script>
 
     <script src="lib/ace/build/src/ace.js"></script>

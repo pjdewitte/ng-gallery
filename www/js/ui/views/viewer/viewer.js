@@ -19,6 +19,7 @@
 
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.ExtensionManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.AnimationManager");
+require("../../../extensions/Autodesk.ADN.Viewing.Extension.ControlSelector");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.StateManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.EmbedManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
@@ -251,6 +252,12 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         var viewer = event.target;
 
+        viewer.removeEventListener(
+          Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
+          $scope.onGeometryLoaded);
+
+        viewer.setProgressiveRendering(false);
+
         resize($scope.viewerLayoutMode);
 
         var ctrlGroup = Toolkit.getControlGroup(viewer,
@@ -306,6 +313,11 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
         });
 
         viewer.unloadExtension("Autodesk.Section");
+
+        viewer.loadExtension(
+          'Autodesk.ADN.Viewing.Extension.ControlSelector', {
+            isMobile: Toolkit.mobile().isAny()
+          });
       };
 
       ///////////////////////////////////////////////////////////////////
@@ -361,7 +373,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
         viewer.loadExtension(
           'Autodesk.ADN.Viewing.Extension.Collaboration', {
             host: configClient.host,
-            port: 5002,
+            port: configClient.collaboration.port,
             controlGroup: 'Gallery',
             meetingId: '',
             viewablePath: path
@@ -488,8 +500,10 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         $scope.viewerConfig = {
 
+          lightPreset: 8,
           viewerType: 'GuiViewer3D',
-          //viewerType: 'Viewer3D'
+          qualityLevel: [false, true],
+          progressiveRendering: false,
 
           width: '100%',
           height: '100px',

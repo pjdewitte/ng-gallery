@@ -188,57 +188,57 @@ module.exports = function(db) {
         {useChunks: false});
     });
 
-/////////////////////////////////////////////////////////////////////
-// transpiles extensions script files
-//
-/////////////////////////////////////////////////////////////////////
-router.get('/transpile/:extensionId/:fileId',
-  function (req, res) {
+  /////////////////////////////////////////////////////////////////////
+  // transpiles extensions script files
+  //
+  /////////////////////////////////////////////////////////////////////
+  router.get('/transpile/:extensionId/:fileId',
+    function (req, res) {
 
-    var filepath = path.join(__dirname,
-      '../../www/uploads/extensions/' +
-      req.params.extensionId + '/' +
-      req.params.fileId);
+      var filepath = path.join(__dirname,
+        '../../www/uploads/extensions/' +
+        req.params.extensionId + '/' +
+        req.params.fileId);
 
-    var options = {};
+      var options = {};
 
-    //result; // => { code, map, ast }
-    babel.transformFile(filepath,
-      options, function (err, result) {
+      //result; // => { code, map, ast }
+      babel.transformFile(filepath,
+        options, function (err, result) {
 
-        if (err) {
-          console.log(err);
-          res.status(404);
-        }
-        else {
+          if (err) {
+            console.log(err);
+            res.status(404);
+          }
+          else {
 
-          res.send(result.code);
-        }
+            res.send(result.code);
+          }
+      });
     });
-  });
 
-/////////////////////////////////////////////////////////////////////
-// transpiles code on the fly
-//
-/////////////////////////////////////////////////////////////////////
-router.post('/transpile',
-  function (req, res) {
+  /////////////////////////////////////////////////////////////////////
+  // transpiles code on the fly
+  //
+  /////////////////////////////////////////////////////////////////////
+  router.post('/transpile',
+    function (req, res) {
 
-    var payload = req.body;
+      var payload = req.body;
 
-    var options = payload.options || {};
+      var options = payload.options || {};
 
-    // => { code, map, ast }
-    var result = babel.transform(
-      payload.code,
-      options);
+      // => { code, map, ast }
+      var result = babel.transform(
+        payload.code,
+        options);
 
-    var response = {
-      code: result.code
-    }
+      var response = {
+        code: result.code
+      }
 
-    res.send(response);
-  });
+      res.send(response);
+    });
 
   return router;
 }
