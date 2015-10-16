@@ -23,10 +23,13 @@ var config = {
 
   user: '',
   pass: '',
-  dbhost: '',
-  port: 20017,
-  db:   'db-name',
-  host: '/node/ng-gallery'
+  dbhost: 'localhost',
+  port: 27017,
+  db:   'gallery',
+  host: '/node/gallery',
+  bucketKey: 'gallery-persistent-bucket',
+  collaboration:{
+    port: 5002
+  }
 }
-
 module.exports = config;

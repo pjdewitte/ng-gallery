@@ -1,13 +1,12 @@
 
 config/auth.js
 config/config-server.js
-config/credentials.js
-config/credentials-stg.js
+config/config-view-and-data.js
+config/config-view-and-data-stg.js
 node_modules/
 data/
 www/lib/bower_components
 www/build
 www/uploads
-
-# webstorm project file
+db-backup
 .idea
