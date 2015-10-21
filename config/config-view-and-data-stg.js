@@ -25,13 +25,13 @@ module.exports = {
 
   //Default bucketKey, used for testing
   //needs to be unique so you better modify it
-  defaultBucketKey: 'adn-bucket',
+  defaultBucketKey: 'adn-bucket-stg',
 
   //Replace with your own API credentials: http://developer.autodesk.com
   credentials: {
 
-    ConsumerKey: process.env.CONSUMERKEY || 'FHDAGKuxH7QAJAIXg4yjnFsDojWCQsAh',
-    ConsumerSecret: process.env.CONSUMERSECRET || 'AsrhTIO1JVlpZ4Cc'
+    ConsumerKey: process.env.CONSUMERKEY,
+    ConsumerSecret: process.env.CONSUMERSECRET
   },
 
   //API EndPoints
