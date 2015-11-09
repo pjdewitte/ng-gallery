@@ -23,5 +23,16 @@ angular.module('Autodesk.ADN.NgGallery.Service.Resource.Model', [])
 
 .factory('Model', ['$resource', function($resource) {
 
-    return $resource(config.host + '/api/models/:id');
+    var actions = {
+
+        'delete': {method:'POST', isArray:false, url:config.host + '/api/models/delete'}
+    };
+
+    var resource = $resource(config.host + '/api/models/:id',
+      {
+          id: "@id"
+      },
+      actions);
+
+    return resource;
 }]);

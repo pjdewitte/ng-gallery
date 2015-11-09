@@ -29,7 +29,7 @@
     "lockr":                  "0.8.2",
     "svg-morpheus":           "0.1.8",
     "requirejs":              "2.1.17",
-    "select2":                "3.4.8",
+    "socket.io-client":       "1.3.7",
     "raf.js":                 "0.0.4",
     "view-and-data-toolkit":  "*"
   },

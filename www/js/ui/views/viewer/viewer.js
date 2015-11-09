@@ -20,12 +20,11 @@
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.ExtensionManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.AnimationManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.ControlSelector");
+require("../../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.StateManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.EmbedManager");
-require("../../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
 require("../../navbars/viewer-navbar/viewer-navbar");
 require("../../../directives/viewer-directive");
-require("../../controls/treeview/treeview");
 
 var configClient = require("../../../config-client");
 
@@ -35,13 +34,10 @@ var configClient = require("../../../config-client");
 ///////////////////////////////////////////////////////////////////////////////
 angular.module('Autodesk.ADN.NgGallery.View.Viewer',
   [
-    'ngRoute',
-    'treeControl',
-    'Autodesk.ADN.NgGallery.Control.Treeview',
-    'Autodesk.ADN.Toolkit.Directive.Viewer',
+    'Autodesk.ADN.NgGallery.Service.Resource.Model',
     'Autodesk.ADN.NgGallery.Navbar.ViewerNavbar',
     'Autodesk.ADN.NgGallery.Service.Toolkit',
-    'Autodesk.ADN.NgGallery.Service.Resource.Model'
+    'Autodesk.ADN.Toolkit.Directive.Viewer'
   ])
 
   ///////////////////////////////////////////////////////////////////////
@@ -71,21 +67,233 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
       //
       //
       ///////////////////////////////////////////////////////////////////
-      function loadViewerConfig() {
+      function getTokenSync() {
 
-        String.prototype.replaceAll = function (find, replace) {
-          var str = this;
-          return str.replace(new RegExp(
-              find.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'),
-            replace);
+        var xhr = new XMLHttpRequest();
+
+        xhr.open("GET", configClient.ApiURL + '/token', false);
+        xhr.send(null);
+
+        var response = JSON.parse(
+          xhr.responseText);
+
+        return response.access_token;
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function addView(path) {
+
+        var view = {
+          id: Toolkit.guid(),
+          viewer: null,
+          path: path
         };
 
-        var viewerConfigStr = Autodesk.Viewing.Private.getParameterByName("viewerConfig");
+        $scope.views.push(view);
 
-        viewerConfigStr = viewerConfigStr.replaceAll("'", "");
+        resize();
+      }
 
-        if(viewerConfigStr.length > 0)
-          $scope.viewerConfig = JSON.parse(viewerConfigStr);
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function removeView(id) {
+
+        $scope.views.forEach(function(view, idx){
+
+          if(id === view.id) {
+
+            view.viewer.finish();
+
+            view.viewer = null;
+
+            $scope.views.splice(idx, 1);
+          }
+        });
+
+        resize();
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function getViewById(id) {
+
+        var result = _.filter($scope.views, function(view){
+
+          return (view.id === id);
+        });
+
+        return (result.length ? result[0] : {});
+      }
+
+      function getViewByPath(path) {
+
+        var result = _.filter($scope.views, function(view){
+
+          return (view.path === path);
+        });
+
+        return (result.length ? result[0] : {});
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function getViewConfig(mode, nbViews, viewIdx) {
+
+        var viewConfig = {
+
+          width: '100vw',
+          height: '100vh',
+          splitter: {
+            width: '0px',
+            height: '0px'
+          }
+        };
+
+        var navbarHeight =
+          (AppState.showNavbar ? 64 : 0) +
+          $scope.viewerNavbarHeight;
+
+        var splitterSize = 2;
+
+        switch(mode) {
+
+          case 'VIEWER_LAYOUT_MODE_ROW_FITTED':
+
+            viewConfig.height =
+              `calc(${100/nbViews}vh - ${navbarHeight/nbViews}px)`;
+
+            viewConfig.width = '100vw';
+
+            viewConfig.splitter.height =
+              splitterSize + 'px';
+
+            viewConfig.splitter.width =
+              '100vw';
+
+            break;
+
+          case 'VIEWER_LAYOUT_MODE_ROW':
+
+            viewConfig.height =
+              `calc(100vh - ${navbarHeight}px)`;
+
+            viewConfig.width =
+              `calc(100vw - 15px)`;
+
+            viewConfig.splitter.height =
+              splitterSize + 'px';
+
+            viewConfig.splitter.width =
+              '100vw';
+
+            break;
+
+          case 'VIEWER_LAYOUT_MODE_COLUMN_FITTED':
+
+            viewConfig.height =
+              `calc(100vh - ${navbarHeight}px)`;
+
+            viewConfig.width =
+              `calc(${100/nbViews}vw + ${(1/nbViews - 1) * splitterSize}px)`;
+
+            viewConfig.splitter.height =
+              `calc(100vh - ${navbarHeight}px)`;
+
+            viewConfig.splitter.width =
+              splitterSize + 'px';
+
+            break;
+
+          case 'VIEWER_LAYOUT_MODE_COLUMN_2:1':
+
+            viewConfig.height =
+              `calc(100vh - ${navbarHeight}px)`;
+
+            //First view is twice the size than other views
+            viewConfig.width =
+              `calc(${(viewIdx ? 1 : 2) * 100/(nbViews+1)}vw + ${(1/nbViews - 1) * splitterSize}px)`;
+
+            viewConfig.splitter.height =
+              `calc(100vh - ${navbarHeight}px)`;
+
+            viewConfig.splitter.width =
+              splitterSize + 'px';
+
+            break;
+        }
+
+        return viewConfig;
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function resize() {
+
+        $scope.views.forEach(function(view, viewIdx) {
+
+          var viewConfig = getViewConfig(
+            $scope.viewerLayoutMode,
+            $scope.views.length,
+            viewIdx);
+
+          _.assign(view, viewConfig);
+
+          setTimeout(function(){
+            if(view.viewer) {
+              view.viewer.resize();
+            }
+          }, 250);
+        });
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function getViewablePath(LMVDocument) {
+
+        var viewablePath = [];
+
+        var rootItem = LMVDocument.getRootItem();
+
+        var path3d = Autodesk.Viewing.Document.getSubItemsWithProperties(
+          rootItem,
+          { 'type': 'geometry', 'role': '3d' },
+          true);
+
+        path3d.forEach(function(path){
+          viewablePath.push({
+            type: '3d',
+            name : path.name,
+            path: LMVDocument.getViewablePath(path)
+          });
+        });
+
+        var path2d = Autodesk.Viewing.Document.getSubItemsWithProperties(
+          rootItem,
+          { 'type': 'geometry', 'role': '2d' },
+          true);
+
+        path2d.forEach(function(path){
+          viewablePath.push({
+            type: '2d',
+            name : path.name,
+            path: LMVDocument.getViewablePath(path)
+          });
+        });
+
+        return viewablePath;
       }
 
       ///////////////////////////////////////////////////////////////////
@@ -94,16 +302,45 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
       ///////////////////////////////////////////////////////////////////
       function loadFromId(id) {
 
-        if(id.length) {
+        Model.get({ id: id }, function(model) {
 
-          Model.get({ id: id }, function(model) {
+          $scope.currentModel = model;
 
-            $scope.docUrn = model.urn;
-            $scope.currentModel = model;
-            AppState.pageTitle = 'Gallery - ' + model.name;
+          AppState.pageTitle = 'Gallery - ' + model.name;
 
+          var options = {
+            env: configClient.env,
+            refreshToken: getTokenSync,
+            getAccessToken: getTokenSync
+          };
+
+          Autodesk.Viewing.Initializer (options, function () {
+
+            Autodesk.Viewing.Document.load(
+              'urn:' + model.urn,
+              function (LMVDocument) {
+
+                var viewablePath = getViewablePath(LMVDocument);
+
+                $scope.$broadcast('viewer.viewable-path-loaded', {
+                  viewablePath: viewablePath
+                });
+
+                if(viewablePath.length > 0) {
+
+                  addView(viewablePath[0].path);
+                }
+                else {
+
+                  console.log('Error: No Viewable Path...');
+                }
+              }, function(error) {
+
+                console.log('Load Error:');
+                console.log(error);
+              });
           });
-        }
+        });
       }
 
       ///////////////////////////////////////////////////////////////////////
@@ -116,9 +353,13 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         $scope.viewerNavbarHeight = visible ? 50 : 0;
 
+        $scope.$broadcast('viewer.load-navbar', {
+          visible: visible
+        });
+
         $timeout(function(){
-          resize($scope.viewerLayoutMode);
-        }, 500);
+          resize();
+        }, 50);
       }
 
       ///////////////////////////////////////////////////////////////////////
@@ -129,68 +370,9 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         AppState.showNavbar = visible;
 
-        $scope.viewerStyle = (visible ? "top:64px" : "top:0px");
-      }
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      function resize(mode) {
-
-        var height = $('#viewer-container').height() - $scope.viewerNavbarHeight;
-
-        var width = $('#viewer-container').width();
-
-        var nb = $scope.selectedPath.length;
-
-        switch(mode) {
-
-          case 'VIEWER_LAYOUT_MODE_ROW_FITTED':
-
-            $scope.viewerConfig.height = height / nb + 'px';
-
-            $scope.viewerConfig.width = width + 'px';
-
-            $scope.viewerConfig.splitterHeight =
-              $scope.viewerConfig.splitterSize + 'px';
-
-            $scope.viewerConfig.splitterWidth = width + 'px';
-
-            break;
-
-          case 'VIEWER_LAYOUT_MODE_ROW':
-
-            $scope.viewerConfig.height = height + 'px';
-
-            $scope.viewerConfig.width = width - 15 + 'px';
-
-            $scope.viewerConfig.splitterHeight =
-              $scope.viewerConfig.splitterSize + 'px';
-
-            $scope.viewerConfig.splitterWidth = width + 'px';
-
-            break;
-
-          case 'VIEWER_LAYOUT_MODE_COLUMN_FITTED':
-
-            $scope.viewerConfig.height = height + 'px';
-
-            $scope.viewerConfig.width = width / nb +
-            (1/nb - 1) * $scope.viewerConfig.splitterSize + 'px';
-
-            $scope.viewerConfig.splitterHeight = height + 'px';
-
-            $scope.viewerConfig.splitterWidth =
-              $scope.viewerConfig.splitterSize + 'px';
-
-            break;
-        }
-
-        for(var id in $scope.viewers) {
-
-          $scope.viewers[id].resize();
-        }
+        $('#views-container').css({
+          'height': (visible ? 'calc(100vh - 64px)' : '100vh')
+        });
       }
 
       ///////////////////////////////////////////////////////////////////
@@ -208,57 +390,32 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
       //
       //
       ///////////////////////////////////////////////////////////////////
-      function connectExtension(extension) {
+      function loadCollaboration(viewer, path, container) {
 
-        if(!$scope.extensionsMap[extension.connectId]) {
-
-          $scope.extensionsMap[extension.connectId] = {};
-        }
-
-        var extensionsMap = $scope.extensionsMap[extension.connectId];
-
-        for(var extGuid in extensionsMap) {
-
-          extensionsMap[extGuid].onConnect(extension);
-
-          extension.onConnect(extensionsMap[extGuid]);
-        }
-
-        $scope.extensionsMap[extension.connectId][extension.guid] = extension;
+        viewer.loadExtension(
+          'Autodesk.ADN.Viewing.Extension.Collaboration', {
+            host: configClient.host,
+            port: configClient.collaboration.port,
+            controlGroup: 'Gallery',
+            container: container,
+            meetingId: '',
+            viewablePath: path
+          });
       }
 
       ///////////////////////////////////////////////////////////////////
       //
       //
       ///////////////////////////////////////////////////////////////////
-      function disconnectExtension(extension) {
-
-        for(var extGuid in $scope.extensionsMap[extension.connectId]) {
-
-          if(extGuid !== extension.guid) {
-
-            $scope.extensionsMap[extension.connectId][extGuid].onDisconnect(extension);
-          }
-        }
-
-        delete $scope.extensionsMap[extension.connectId][extension.guid];
-      }
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onGeometryLoaded = function (event) {
+      function onGeometryLoaded(event) {
 
         var viewer = event.target;
 
         viewer.removeEventListener(
           Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
-          $scope.onGeometryLoaded);
+          onGeometryLoaded);
 
         viewer.setProgressiveRendering(false);
-
-        resize($scope.viewerLayoutMode);
 
         var ctrlGroup = Toolkit.getControlGroup(viewer,
           'Gallery');
@@ -280,8 +437,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
         viewer.loadExtension(
           'Autodesk.ADN.Viewing.Extension.ExtensionManager', {
             index: 2,
-            connect: connectExtension,
-            disconnect: disconnectExtension,
             controlGroup: 'Gallery',
             apiUrl: configClient.ApiURL + '/extensions',
             extensionsUrl: configClient.ApiURL + '/extensions/transpile',
@@ -316,75 +471,115 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         viewer.loadExtension(
           'Autodesk.ADN.Viewing.Extension.ControlSelector', {
-            isMobile: Toolkit.mobile().isAny()
+            isMobile: AppState.mobile
           });
-      };
+      }
 
       ///////////////////////////////////////////////////////////////////
       //
       //
       ///////////////////////////////////////////////////////////////////
-      $scope.onViewablePath = function(pathInfoCollection) {
+      $scope.$on('viewer-navbar.activate-path',
 
-        $scope.$broadcast('viewer.viewable-path-loaded', {
-          pathInfoCollection: pathInfoCollection
+        function (event, data) {
+
+          addView(data.path);
         });
 
-        $scope.pathInfoCollection = pathInfoCollection;
+      $scope.$on('viewer-navbar.deactivate-path',
 
-        if($scope.pathInfoCollection.path3d.length > 0) {
+        function (event, data) {
 
-          $scope.selectedPath.push(
-            $scope.pathInfoCollection.path3d[0].path);
-        }
+          var view = getViewByPath(data.path);
 
-        else if($scope.pathInfoCollection.path2d.length > 0) {
-
-          $scope.selectedPath.push(
-            $scope.pathInfoCollection.path2d[0].path);
-        }
-      };
+          removeView(view.id);
+        });
 
       ///////////////////////////////////////////////////////////////////
       //
       //
       ///////////////////////////////////////////////////////////////////
-      $scope.onViewerInitialized = function (viewer) {
+      $scope.$on('viewer-navbar.layout-mode-changed',
 
-        $scope.viewers[viewer.id] = viewer;
+        function (event, data) {
 
-        $timeout(function(){
-          resize($scope.viewerLayoutMode);
-        }, 500);
+          $scope.viewerLayoutMode = data.mode;
+
+          resize();
+        });
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$on('viewer-navbar.search-input-modified',
+
+        function (event, data) {
+          
+          $scope.views.forEach(function (view) {
+
+            view.viewer.isolate([]);
+
+            view.viewer.search(data.searchInput, function (ids) {
+
+              view.viewer.isolate(ids);
+            });
+          });
+        });
+
+      ///////////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////////
+      $scope.onViewerDivCreated = function(id) {
+
+        var view = getViewById(id);
+
+        var container = document.getElementById(id);
+
+        var viewer = new Autodesk.Viewing.Private.GuiViewer3D(
+          container);
+
+        viewer.initialize();
+
+        viewer.setLightPreset(8);
+        viewer.setProgressiveRendering(false);
 
         viewer.addEventListener(
           Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
-          $scope.onGeometryLoaded);
+          onGeometryLoaded);
 
-        $('.loader-background').remove();
-      };
+        viewer.load(view.path);
 
-      ///////////////////////////////////////////////////////////////////
+        view.viewer = viewer;
+
+        loadCollaboration(viewer, view.path, container);
+      }
+
+      ///////////////////////////////////////////////////////////////////////
       //
       //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onPathLoaded = function (viewer, path) {
+      ///////////////////////////////////////////////////////////////////////
+      $scope.onViewerDivDestroyed = function(id) {
 
-        viewer.loadExtension(
-          'Autodesk.ADN.Viewing.Extension.Collaboration', {
-            host: configClient.host,
-            port: configClient.collaboration.port,
-            controlGroup: 'Gallery',
-            meetingId: '',
-            viewablePath: path
-          });
-      };
+        removeView(id);
+      }
 
-      ///////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////
       //
       //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onViewerFactoryInitialized = function (factory) {
+      ///////////////////////////////////////////////////////////////////////
+      function initialize() {
+
+        $scope.viewerLayoutMode = 'VIEWER_LAYOUT_MODE_COLUMN_2:1';
+
+        showAppNavbar(!AppState.mobile);
+
+        AppState.activeView = 'viewer';
+
+        showViewerNavbar(false);
+
+        $scope.views = [];
 
         var id = Autodesk.Viewing.Private.getParameterByName("id");
 
@@ -401,122 +596,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
             }
           });
         }
-      };
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onDestroy = function (viewer) {
-
-        delete $scope.viewers[viewer.id];
-
-        viewer.finish();
-      };
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.$on('ui.layout.resize', function (event, data) {
-
-        resize($scope.viewerLayoutMode);
-      });
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.$on('viewer.viewable-path-selected',
-
-        function (event, data) {
-
-          $scope.selectedPath = data.selectedItems;
-        });
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.$on('viewer.layout-mode-changed',
-
-        function (event, data) {
-
-          $scope.viewerLayoutMode = data.selectedLayoutMode;
-
-          resize($scope.viewerLayoutMode);
-        });
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.$on('viewer.search-input-modified',
-
-        function (event, data) {
-
-          for(var id in $scope.viewers) {
-
-            var viewer = $scope.viewers[id];
-
-            viewer.isolate([]);
-
-            viewer.search(data.searchInput, function(ids){
-
-              viewer.isolate(ids);
-            });
-          }
-        });
-
-      ///////////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////////
-      function initialize() {
-
-        $scope.tokenUrl = configClient.ApiURL + '/token';
-
-        $(window).resize(function() {
-          $timeout(function(){
-            resize($scope.viewerLayoutMode);
-          }, 500);
-        });
-
-        $scope.viewerLayoutMode = 'VIEWER_LAYOUT_MODE_ROW_FITTED';
-
-        AppState.activeView = 'viewer';
-
-        $scope.extensionsMap = {};
-
-        $scope.selectedPath = [];
-
-        $scope.viewers = {};
-
-        $scope.viewerContainerConfig = {
-
-          environment: 'AutodeskProduction'
-          //environment: 'AutodeskStaging'
-        };
-
-        $scope.viewerConfig = {
-
-          lightPreset: 8,
-          viewerType: 'GuiViewer3D',
-          qualityLevel: [false, true],
-          progressiveRendering: false,
-
-          width: '100%',
-          height: '100px',
-          splitterSize: 2,
-          splitterWidth: '2px',
-          splitterHeight: '2px'
-        };
-
-        loadViewerConfig();
-
-        showViewerNavbar(false);
-
-        showAppNavbar(!Toolkit.mobile().isAny());
       }
 
       ///////////////////////////////////////////////////////////////////////

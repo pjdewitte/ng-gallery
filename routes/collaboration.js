@@ -301,6 +301,31 @@ var collaboration = function (server, port) {
           }
         }
       });
+
+      /////////////////////////////////////////////////////////////////////////
+      // ExtensionMessage message handler
+      //
+      /////////////////////////////////////////////////////////////////////////
+      socket.on('Collaboration.ExtensionMessage', function (collaborationMsg) {
+
+        var meeting = meetingMap[collaborationMsg.meetingId];
+
+        if(meeting) {
+
+          // dispatch message to all users
+          // except user who sent the message
+          for(var socketId in meeting.users) {
+
+            if(socket.id !== socketId) {
+
+              var user = meeting.users[socketId];
+
+              user.socket.emit('Collaboration.ExtensionMessage',
+                collaborationMsg);
+            }
+          }
+        }
+      });
     
       /////////////////////////////////////////////////////////////////////////
       // request state init handler

@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 // Copyright (c) Autodesk, Inc. All rights reserved
 // Written by Philippe Leefsma 2014 - ADN/Developer Technical Services
 //
@@ -14,22 +14,64 @@
 // MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC.
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
-/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
-//This sample is using a sample mongodb hosted on mongolab.com
-//You can change to your own mongo database
 
-var config = {
+/////////////////////////////////////////////////////////////////////
+//
+//
+/////////////////////////////////////////////////////////////////////
+var local = new function() {
 
-  user: '',
-  pass: '',
-  dbhost: 'localhost',
-  port: 27017,
-  db:   'gallery',
-  host: '/node/gallery',
-  bucketKey: 'gallery-persistent-bucket',
-  collaboration:{
+  this.user = '';
+  this.pass = '';
+  this.db = 'gallery',
+  this.port = 27017;
+  this.offline = true,
+  this.allowDelete = true,
+  this.dbhost = 'localhost';
+  this.host = '/node/gallery';
+  this.bucketKey = 'gallery-persistent-bucket';
+
+  this.collaboration = {
     port: 5002
+  },
+
+  this.auth = {
+
+    'facebookAuth': {
+      'clientID': '',
+      'clientSecret': '',
+      'callbackURL': 'http://localhost:3000' + this.host + '/api/auth/facebook/callback'
+    },
+
+    'googleAuth': {
+      'clientID': '',
+      'clientSecret': '',
+      'callbackURL': 'http://localhost:3000' + this.host + '/api/auth/google/callback'
+    },
+
+    'githubAuth': {
+      'clientID': '',
+      'clientSecret': '',
+      'callbackURL': 'http://localhost:3000' + this.host + '/api/auth/github/callback'
+    },
+
+    'linkedInAuth': {
+      'clientID': '',
+      'clientSecret': '',
+      'callbackURL': 'http://localhost:3000' + this.host + '/api/auth/linkedin/callback'
+    }
+  },
+
+  this.lmvConfig = {
+    credentials: {
+      ConsumerKey: process.env.CONSUMERKEY,
+      ConsumerSecret:process.env.CONSUMERSECRET
+    }
   }
 }
-module.exports = config;
+
+
+
+module.exports = local;

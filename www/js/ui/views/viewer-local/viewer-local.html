@@ -1,0 +1,28 @@
+
+
+<div id="views-container" style="height:calc(100vh - 64px); position: relative">
+
+  <div ng-show="viewerNavbarVisible" ng-include="'js/ui/navbars/viewer-navbar/viewer-navbar.html'"
+       id="viewer-navbar"
+       style="height:50px;">
+  </div>
+
+  <div ng-repeat="view in views">
+
+    <viewer-div id="{{view.id}}"
+            on-create="onViewerDivCreated(id)"
+            on-destroy="onViewerDivDestroyed(id)"
+            ng-style="{'width':view.width, 'height':view.height, 'float':'left', 'position':'relative'}">
+
+    </viewer-div>
+
+    <div ng-hide="$last"
+         ng-style="{'width':view.splitter.width, 'height':view.splitter.height, 'float':'left', 'background-color':'#979090'}">
+    </div>
+
+  </div>
+
+</div>
+
+
+

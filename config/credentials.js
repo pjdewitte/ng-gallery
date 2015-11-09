@@ -18,9 +18,11 @@
 
 var credentials = {
 
-  BaseUrl: 'https://developer.api.autodesk.com',
-  ConsumerKey: '',
-  SecretKey: ''
+  translator: {
+    base_url: 'https://datamarket.accesscontrol.windows.net/v2/OAuth2-13',
+    client_id: '',
+    client_secret: ''
+  }
 }
 
 module.exports = credentials;

@@ -7,15 +7,13 @@ var LinkedInStrategy = require('passport-linkedin').Strategy;
 var GithubStrategy = require('passport-github').Strategy;
 var FbStrategy = require('passport-facebook').Strategy;
 
-var config = require('../../config/config-server');
-var configAuth = require('../../config/auth.js');
 var passport = require("passport");
 var express = require('express');
 var request = require('request');
 var mongo = require('mongodb');
 
 
-module.exports = function(db) {
+module.exports = function(db, config) {
 
   var router = express.Router();
 
@@ -147,9 +145,9 @@ module.exports = function(db) {
   ///////////////////////////////////////////////////////////////////////////////
   passport.use(new FbStrategy({
 
-        clientID: configAuth.facebookAuth.clientID,
-        clientSecret: configAuth.facebookAuth.clientSecret,
-        callbackURL: configAuth.facebookAuth.callbackURL
+        clientID: config.auth.facebookAuth.clientID,
+        clientSecret: config.auth.facebookAuth.clientSecret,
+        callbackURL: config.auth.facebookAuth.callbackURL
       },
 
       function (token, refreshToken, profile, done) {
@@ -184,9 +182,9 @@ module.exports = function(db) {
   ///////////////////////////////////////////////////////////////////////////////
   passport.use(new GoogleStrategy({
 
-        clientID: configAuth.googleAuth.clientID,
-        clientSecret: configAuth.googleAuth.clientSecret,
-        callbackURL: configAuth.googleAuth.callbackURL
+        clientID: config.auth.googleAuth.clientID,
+        clientSecret: config.auth.googleAuth.clientSecret,
+        callbackURL: config.auth.googleAuth.callbackURL
       },
 
       function (token, refreshToken, profile, done) {
@@ -220,9 +218,9 @@ module.exports = function(db) {
   ///////////////////////////////////////////////////////////////////////////////
   passport.use(new GithubStrategy({
 
-        clientID: configAuth.githubAuth.clientID,
-        clientSecret: configAuth.githubAuth.clientSecret,
-        callbackURL: configAuth.githubAuth.callbackURL
+        clientID: config.auth.githubAuth.clientID,
+        clientSecret: config.auth.githubAuth.clientSecret,
+        callbackURL: config.auth.githubAuth.callbackURL
       },
 
       function (token, refreshToken, profile, done) {
@@ -256,9 +254,9 @@ module.exports = function(db) {
   ///////////////////////////////////////////////////////////////////////////////
   passport.use(new LinkedInStrategy({
 
-        consumerKey: configAuth.linkedInAuth.clientID,
-        consumerSecret: configAuth.linkedInAuth.clientSecret,
-        callbackURL: configAuth.linkedInAuth.callbackURL,
+        consumerKey: config.auth.linkedInAuth.clientID,
+        consumerSecret: config.auth.linkedInAuth.clientSecret,
+        callbackURL: config.auth.linkedInAuth.callbackURL,
         profileFields: ['id', 'first-name', 'last-name', 'email-address', 'headline']
       },
 

@@ -1,31 +1,41 @@
-
-var configClient = require("../../config-client");
-
+///////////////////////////////////////////////////////////////////////////////
+// Copyright (c) Autodesk, Inc. All rights reserved
+// Written by Philippe Leefsma 2014 - ADN/Developer Technical Services
+//
+// Permission to use, copy, modify, and distribute this software in
+// object code form for any purpose and without fee is hereby granted,
+// provided that the above copyright notice appears in all copies and
+// that both that copyright notice and the limited warranty and
+// restricted rights notice below appear in all supporting
+// documentation.
+//
+// AUTODESK PROVIDES THIS PROGRAM "AS IS" AND WITH ALL FAULTS.
+// AUTODESK SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTY OF
+// MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC.
+// DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
+// UNINTERRUPTED OR ERROR FREE.
+///////////////////////////////////////////////////////////////////////////////
 require("../../services/model-service");
 require("../../services/toolkit-service");
-require("../../services/thumbnail-service");
-require("../../services/view.and.data-service");
-
+require("../../services/appState-service");
+require("../../ui/navbars/app-navbar/app-navbar");
 require("../../directives/spinning-img-directive");
-require("../../directives/viewer-directive");
-
-require("../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
+require("../../extensions/Autodesk.ADN.Viewing.Extension.VR");
 require("../../extensions/Autodesk.ADN.Viewing.Extension.StateManager");
+require("../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
+require("../../extensions/Autodesk.ADN.Viewing.Extension.ControlSelector");
+
+var configClient = require("../../config-client");
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 //
 ///////////////////////////////////////////////////////////////////////////////
 angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
-
     'ngResource',
-
     'Autodesk.ADN.NgGallery.Service.Toolkit',
-    'Autodesk.ADN.NgGallery.Service.Resource.Model',
-    'Autodesk.ADN.NgGallery.Service.Resource.Thumbnail',
-    'Autodesk.ADN.Toolkit.ViewData.Service.ViewAndData',
-
-    'Autodesk.ADN.Toolkit.Directive.Viewer',
+    'Autodesk.ADN.NgGallery.Service.AppState',
+    'Autodesk.ADN.NgGallery.Navbar.AppNavbar',
     'Autodesk.ADN.Toolkit.UI.Directive.SpinningImg'
   ])
 
@@ -33,47 +43,108 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
   //
   //
   ///////////////////////////////////////////////////////////////////////////
-  .config(['ViewAndDataProvider',
-    function (ViewAndDataProvider)
-    {
-      ViewAndDataProvider.setTokenUrl(
-        configClient.ApiURL + '/token');
-    }])
-
-  ///////////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////////
   .controller('Autodesk.ADN.NgGallery.App.Collaboration.Controller',
-  ['$scope', function($scope) {
+  ['$scope', 'Toolkit', 'AppState', function($scope, Toolkit, AppState) {
 
-    $scope.tokenUrl = configClient.ApiURL + '/token';
+    ///////////////////////////////////////////////////////////////////
+    //
+    //
+    ///////////////////////////////////////////////////////////////////
+    function getTokenSync() {
 
-    $scope.viewerContainerConfig = {
+      var xhr = new XMLHttpRequest();
 
-      environment: 'AutodeskProduction'
-    };
+      xhr.open("GET", configClient.ApiURL + '/token', false);
+      xhr.send(null);
 
-    $scope.viewerConfig = {
+      var response = JSON.parse(
+        xhr.responseText);
 
-      lightPreset: 8,
-      viewerType: 'GuiViewer3D',
-      qualityLevel: [false, true],
-      progressiveRendering: false,
-      backgroundColor:[3,4,5, 250, 250, 250]
-    };
-    
+      return response.access_token;
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    //
+    //
+    ///////////////////////////////////////////////////////////////////
+    function loadCollaboration(viewer) {
+
+      var meetingId = Autodesk.Viewing.Private.getParameterByName("meetingId");
+
+      if(meetingId.length) {
+
+        viewer.loadExtension(
+          'Autodesk.ADN.Viewing.Extension.Collaboration', {
+            host: configClient.host,
+            port: configClient.collaboration.port,
+            controlGroup: 'Autodesk.ADN.MetaEditor.ControlGroup',
+            meetingId: meetingId,
+            mobile: AppState.mobile,
+            container: document.getElementById('viewer-collaboration'),
+            onLoadDocument: function(urn, modelId) {
+
+              loadExtensions(viewer, modelId);
+            }
+          });
+      }
+    }
+
     ///////////////////////////////////////////////////////////////////////
     //
     //
     ///////////////////////////////////////////////////////////////////////
     function loadExtensions(viewer, modelId) {
-      
+
       viewer.loadExtension('Autodesk.Measure');
 
-      viewer.loadExtension('Autodesk.ADN.Viewing.Extension.StateManager', {
-        controlGroup: 'Autodesk.ADN.MetaEditor.ControlGroup',
-        apiUrl: configClient.ApiURL + '/states/' + modelId
+      viewer.loadExtension('Autodesk.Section');
+
+      viewer.loadExtension(
+        'Autodesk.ADN.Viewing.Extension.StateManager', {
+          controlGroup: 'Autodesk.ADN.MetaEditor.ControlGroup',
+          apiUrl: configClient.ApiURL + '/states/' + modelId
+        });
+
+      viewer.loadExtension(
+        'Autodesk.ADN.Viewing.Extension.ControlSelector', {
+          isMobile: AppState.mobile
+        });
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    //
+    //
+    ///////////////////////////////////////////////////////////////////
+    function initialize() {
+
+      AppState.mobile = Toolkit.mobile().isAny();
+
+      AppState.showNavbar = false; //!AppState.mobile;
+
+      if(!AppState.showNavbar) {
+
+        $('#viewer-collaboration').css({
+          'height':'100vh'
+        });
+      }
+
+      var options = {
+        env: configClient.env,
+        refreshToken: getTokenSync,
+        getAccessToken: getTokenSync
+      };
+
+      Autodesk.Viewing.Initializer (options, function () {
+
+        var viewer = new Autodesk.Viewing.Private.GuiViewer3D(
+          document.getElementById('viewer-collaboration'));
+
+        viewer.initialize();
+
+        viewer.setLightPreset(8);
+        viewer.setProgressiveRendering(false);
+
+        loadCollaboration(viewer);
       });
     }
 
@@ -81,52 +152,6 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
     //
     //
     ///////////////////////////////////////////////////////////////////
-    $scope.onViewerFactoryInitialized = function (factory) {
-
-    };
-
-    ///////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////
-    $scope.onViewablePath = function (pathInfoCollection) {
-
-    };
-
-    ///////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////
-    $scope.onViewerInitialized = function (viewer) {
-
-      $scope.viewer = viewer;
-
-      $scope.viewer.resize();
-
-      var meetingId = Autodesk.Viewing.Private.getParameterByName("meetingId");
-
-      if(meetingId.length) {
-
-        $scope.viewer.loadExtension('Autodesk.ADN.Viewing.Extension.Collaboration', {
-          host: configClient.host,
-          port: 5002,
-          controlGroup: 'Autodesk.ADN.MetaEditor.ControlGroup',
-          meetingId: meetingId,
-          onLoadDocument: function(urn, modelId) {
-
-            loadExtensions(viewer, modelId);
-          }
-        });
-      }
-    };
-
-    ///////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////
-    $scope.onDestroy = function (viewer) {
-
-      viewer.finish();
-    };
+    initialize();
 
   }]);

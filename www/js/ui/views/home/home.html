@@ -106,29 +106,86 @@
                                 </div>
 
                                 <!--=================== Model List ===================-->
-                                <ul id="modelList" class="col-lg-12" style="overflow: auto; height: 800px; margin:0;">
-                                    <li ng-repeat="model in models | filter: searchFilter | orderBy:'name'" style="list-style-type: none; margin:0;">
+                                <ul id="model-list" class="col-lg-12 fly-simplified stroll" style="overflow: auto; height:600px; margin:0;">
 
-                                        <div class="row" style="{{['background-color:#FFFFFF;padding: 10px', 'background-color:rgba(162, 201, 134, 0.41);padding: 10px'][$index %2]}}">
-                                            <div class="col-md-3" style="margin-top: 15px; margin-bottom: 15px;">
-                                                <img class="img-responsive"
-                                                     ng-src={{model.thumbnail}}
-                                                     width="128"
-                                                     height="128"
-                                                     style="border: 1px solid; border-radius: 15px;">
-                                            </div>
-                                            <div class="col-md-5">
-                                                <h3 style="margin-top: 10px;">{{model.name}}</h3>
-                                                <h5><b>Type: </b>{{model.type}}</h5>
-                                                <h5><b>Translation: </b>{{model.progress}}</h5>
-                                                <a class="btn btn-primary" href="#/viewer?id={{model._id}}">
-                                                    Show in viewer
-                                                    <span class="glyphicon glyphicon-chevron-right"></span>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </li>
-                                </ul>
+                                     <li class="model-item" ng-repeat="model in models" style="list-style-type: none; margin:0;">
+
+                                         <div class="row" style="{{['background-color:#FFFFFF;padding: 10px', 'background-color:rgba(162, 201, 134, 0.41);padding: 10px'][$index %2]}}">
+                                             <div class="col-md-3" style="margin-top: 15px; margin-bottom: 15px;">
+                                                 <img class="img-responsive"
+                                                      ng-src={{model.thumbnail}}
+                                                      width="128"
+                                                      height="128"
+                                                      style="border: 1px solid; border-radius: 15px;">
+                                             </div>
+                                             <div class="col-md-9">
+
+                                                 <h3 style="margin-top: 10px;">{{model.name}}</h3>
+                                                 <h5><b>Type: </b>{{model.type}}</h5>
+                                                 <h5><b>Translation: </b>{{model.progress}}</h5>
+
+                                                 <div class="row">
+
+                                                     <div ng-if="model.viewablePath"
+                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                                                         <a class="btn btn-success btn-gallery-home" href="#/viewer-local?id={{model._id}}">
+                                                             <span class="glyphicon glyphicon-flash"></span>
+                                                             Load from Local
+                                                         </a>
+                                                         <hr style="border:0; margin:8px;">
+                                                     </div>
+
+                                                     <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                                                         <a class="btn btn-primary btn-gallery-home" href="#/viewer?id={{model._id}}">
+                                                             <span class="glyphicon glyphicon-eye-open"></span>
+                                                             Show in Viewer
+                                                         </a>
+                                                         <hr style="border:0; margin:8px;">
+                                                     </div>
+
+                                                     <div ng-if="AppState.mobile"
+                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                                                         <a class="btn btn-success btn-gallery-home" href="#/viewer-vr?id={{model._id}}">
+                                                             <span class="glyphicon glyphicon-phone"></span>
+                                                             VR Mode <br> (experimental)
+                                                         </a>
+                                                         <hr style="border:0; margin:8px;">
+                                                     </div>
+
+                                                     <div ng-if="model.viewablePath"
+                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                                                         <a class="btn btn-warning btn-gallery-home" href="" ng-click="drop(model._id)">
+                                                             <span class="glyphicon glyphicon-remove-circle"></span>
+                                                             Drop Local
+                                                         </a>
+                                                         <hr style="border:0; margin:8px;">
+                                                     </div>
+
+                                                     <div ng-if="!model.viewablePath && model.downloadable"
+                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                                                         <a href=""
+                                                            class="btn btn-info btn-gallery-home"
+                                                            ng-click="download(model._id)"
+                                                            ng-disabled="model.downloading">
+                                                             <span class="glyphicon glyphicon-cloud-download"></span>
+                                                             Download
+                                                         </a>
+                                                         <hr style="border:0; margin:8px;">
+                                                     </div>
+
+                                                     <div ng-if="model.allowDelete"
+                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
+                                                         <a class="btn btn-danger btn-gallery-home" href="" ng-click="delete(model)">
+                                                             <span class="glyphicon glyphicon-remove"></span>
+                                                             Delete
+                                                         </a>
+                                                         <hr style="border:0; margin:8px;">
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </li>
+                                 </ul>
 
                                 <!-- Bottom Back to top Mobile================================================== -->
                                 <div class="bs-docs-section clearfix">

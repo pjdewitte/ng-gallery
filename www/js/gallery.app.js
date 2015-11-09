@@ -21,7 +21,7 @@
 var configClient = require("./config-client");
 
 // Dialogs
-require("./ui/dialogs/about/about");
+require("./ui/dialogs/item/item");
 require("./ui/dialogs/embed/embed");
 require("./ui/dialogs/login/login");
 require("./ui/dialogs/models/models");
@@ -30,8 +30,10 @@ require("./ui/dialogs/models/models");
 require("./ui/views/home/home");
 require("./ui/views/upload/upload");
 require("./ui/views/viewer/viewer");
+require("./ui/views/viewer-vr/viewer-vr");
 require("./ui/views/extensions/extensions");
 require("./ui/navbars/app-navbar/app-navbar");
+require("./ui/views/viewer-local/viewer-local");
 require("./ui/views/extension-editor/extension-editor");
 
 // Directives
@@ -107,13 +109,16 @@ angular.module('Autodesk.ADN.NgGallery.App',
     'Autodesk.ADN.NgGallery.View.Home',
     'Autodesk.ADN.NgGallery.View.Viewer',
     'Autodesk.ADN.NgGallery.View.Upload',
+    'Autodesk.ADN.NgGallery.View.Viewer-VR',
     'Autodesk.ADN.NgGallery.View.Extensions',
+    'Autodesk.ADN.NgGallery.View.Viewer-Local',
     'Autodesk.ADN.NgGallery.View.ExtensionEditor',
 
     // Navbar
     'Autodesk.ADN.NgGallery.Navbar.AppNavbar',
 
     // Dialogs
+    'Autodesk.ADN.NgGallery.Dialog.Item',
     'Autodesk.ADN.NgGallery.Dialog.About',
     'Autodesk.ADN.NgGallery.Dialog.Embed',
     'Autodesk.ADN.NgGallery.Dialog.Login',
@@ -159,9 +164,11 @@ angular.module('Autodesk.ADN.NgGallery.App',
   //
   ///////////////////////////////////////////////////////////////////////////
   .controller('Autodesk.ADN.NgGallery.App.Controller',
-  ['$scope', '$http', 'AppState', function($scope, $http, AppState) {
+  ['$scope', '$http', 'AppState', 'Toolkit', function($scope, $http, AppState, Toolkit) {
 
     $scope.AppState = AppState;
+
+    AppState.mobile = Toolkit.mobile().isAny();
 
     requirejs.config({
       waitSeconds: 0
@@ -185,6 +192,5 @@ angular.module('Autodesk.ADN.NgGallery.App',
     });
 
   }]);
-
 
 

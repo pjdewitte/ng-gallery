@@ -26,6 +26,8 @@ angular.module('Autodesk.ADN.NgGallery.Service.AppState', [])
 
     return {
 
+      mobile: false,
+
       showNavbar: true,
 
       activeView: 'home',

@@ -304,6 +304,8 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
 
       var name =  $('#' + baseId + 'stateName').val();
 
+      $('#' + baseId + 'stateName').val('');
+
       var stateFilter = {
         guid: true,
         seedURN: false,
@@ -350,7 +352,7 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
         $('#' + baseId + 'playSequenceBtn > span').removeClass("glyphicon-play");
         $('#' + baseId + 'playSequenceBtn > span').addClass("glyphicon-pause");
 
-        var period = parseInt($('#' + baseId + 'period').val());
+        var period = parseFloat($('#' + baseId + 'period').val());
 
         period = (isNaN(period) ? 1.0 : period);
 
@@ -370,7 +372,7 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
 
               var state = _stateMap[stateItems[_sequenceIndex].id];
 
-              viewer.restoreState(state);
+              restoreStateWithPivot(state);
 
               ++_sequenceIndex;
 
@@ -424,7 +426,14 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
 
       $('#' + state.guid).click(function () {
 
-        viewer.restoreState(_stateMap[state.guid]);
+        $('#' + baseId + 'PanelContainerId > div').each(
+          function (idx, child) {
+            if(child.id === state.guid) {
+              _sequenceIndex = idx
+            }
+          });
+
+        restoreStateWithPivot(_stateMap[state.guid]);
       });
     }
 
@@ -449,6 +458,35 @@ Autodesk.ADN.Viewing.Extension.StateManager = function (viewer, options) {
       var $container = $('#' + baseId + 'PanelContainerId');
 
       $container[0].scrollTop = 0;
+    }
+
+    /////////////////////////////////////////////
+    // A fix for viewer.restoreState
+    // that also restores pivotPoint
+    //
+    /////////////////////////////////////////////
+    function restoreStateWithPivot(state) {
+
+      function onStateRestored() {
+
+        viewer.removeEventListener(
+          Autodesk.Viewing.VIEWER_STATE_RESTORED_EVENT,
+          onStateRestored);
+
+        var pivot = state.viewport.pivotPoint;
+
+        setTimeout(function () {
+
+          viewer.navigation.setPivotPoint(
+            new THREE.Vector3(pivot[0], pivot[1], pivot[2]))
+        }, 1250);
+      }
+
+      viewer.addEventListener(
+        Autodesk.Viewing.VIEWER_STATE_RESTORED_EVENT,
+        onStateRestored);
+
+      viewer.restoreState(state);
     }
   };
 

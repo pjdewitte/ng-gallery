@@ -22,42 +22,46 @@
 
           <div class="row">
 
-            <div class="col-sm-5">
+            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12" style="width: 360px;padding-top: 6px;">
+              <select class="multiselect-path" name="viewable-path" multiple="multiple" style="width:350px;">
 
-              <button type="button"
-                      class="btn btn-default"
-                      ng-model="selectedItems"
-                      data-html="1"
-                      ng-options="item.value as item.label for item in items"
-                      data-multiple="1"
-                      data-animation="am-flip-x"
-                      bs-select
-                      style="max-width: 300px">
+                <optgroup label="3D Path">
+                  <option ng-repeat="path in viewablePath | filter:{type:'3d'}" value="{{path.path}}" ng-selected="{{path.selected}}">
+                    {{path.name}}
+                  </option>
+                </optgroup>
 
-                  <span class="caret"></span>
-
-              </button>
-
-              <button type="button"
-                      class="btn btn-default"
-                      ng-model="selectedLayoutMode"
-                      data-html="1"
-                      ng-options="mode.value as mode.label for mode in modes"
-                      data-animation="am-flip-x"
-                      bs-select
-                      ng-disabled="modeDisabled">
-
-                  <span class="caret"></span>
-
-              </button>
-
+                <optgroup label="2D Path">
+                  <option ng-repeat="path in viewablePath | filter:{type:'2d'}" value="{{path.path}}" ng-selected="{{path.selected}}">
+                    {{path.name}}
+                  </option>
+                </optgroup>
+              </select>
             </div>
 
-            <div class="col-sm-2">
-              <input type="text" ng-model="searchInput" class="form-control" placeholder="Search by property ..."/>
+            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12" style="width: 250px;padding-top: 6px;">
+              <select class="multiselect-layout" name="layout-mode" size="4" style="width: 240px;">
+                <option value="VIEWER_LAYOUT_MODE_ROW_FITTED">
+                  Layout Mode: Row - Fitted
+                </option>
+                <option value="VIEWER_LAYOUT_MODE_ROW">
+                  Layout Mode: Row
+                </option>
+                <option value="VIEWER_LAYOUT_MODE_COLUMN_FITTED">
+                  Layout Mode: Column - Fitted
+                </option>
+                <option selected="selected" value="VIEWER_LAYOUT_MODE_COLUMN_2:1">
+                  Layout Mode: Column 2:1
+                </option>
+              </select>
+            </div>
+
+            <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12" style="padding-top: 6px;">
+              <input type="text" ng-model="searchInput" class="form-control" placeholder="Search by property ..." style="height: 28px;"/>
             </div>
 
           </div>
+
         </div>
     </div>
 </nav>

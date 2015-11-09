@@ -56,8 +56,10 @@ Autodesk.ADN.Viewing.Extension.ControlSelector = function (viewer, options) {
   //
   /////////////////////////////////////////////
   _thisExtension.unload = function () {
-    
-    _panel.setVisible(false);
+
+    if(_panel) {
+      _panel.setVisible(false);
+    }
 
     $('#' + _toolbarId).remove();
     

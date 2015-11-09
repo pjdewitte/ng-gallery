@@ -17,13 +17,51 @@
 ///////////////////////////////////////////////////////////////////////////////
 'use strict';
 
-angular.module('Autodesk.ADN.Toolkit.Directive.Viewer', [])
+var module = angular.module('Autodesk.ADN.Toolkit.Directive.Viewer', []);
+
+  ///////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////
+module.directive('viewerDiv', function ($timeout) {
+
+    function postlink($scope, $element, $attributes) {
+
+      $scope.$on('$destroy', function () {
+
+        $scope.onDestroy({
+          id: $scope.id
+        });
+      });
+
+      $timeout(function(){
+        $scope.onCreate({
+          id: $scope.id
+        });
+      }, 0);
+    }
+
+    return {
+
+      scope: {
+        id: '@',
+        onCreate: '&',
+        onDestroy: '&'
+      },
+      link: {
+        post: postlink
+      },
+      restrict: 'E',
+      replace: true,
+      template: '<div> <div/>'
+    };
+  });
 
 ///////////////////////////////////////////////////////////////////////////
 //
 //
 ///////////////////////////////////////////////////////////////////////////
-.directive('adnViewerContainer', function () {
+module.directive('adnViewerContainer', function () {
 
   function link($scope, $element, $attributes) {
 
@@ -97,13 +135,13 @@ angular.module('Autodesk.ADN.Toolkit.Directive.Viewer', [])
     template: '<div style="overflow:auto;position:relative;{{style}}">' +
     '<div ng-transclude></div><div/>'
   };
-})
+});
 
 ///////////////////////////////////////////////////////////////////////////
 //
 //
 ///////////////////////////////////////////////////////////////////////////
-.directive('adnViewer', function () {
+module.directive('adnViewer', function () {
 
   function postlink($scope, $element, $attributes, parentController) {
 

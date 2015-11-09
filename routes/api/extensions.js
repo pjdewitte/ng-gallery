@@ -44,8 +44,8 @@ module.exports = function(db) {
     db.collection('gallery.extensions', function (err, collection) {
 
       collection.find({}, {
-        name: 1,
         id: 1,
+        name: 1,
         file: 1
       }).sort({name: 1}).toArray(
         function (err, items) {
@@ -67,7 +67,11 @@ module.exports = function(db) {
       function (err, collection) {
         collection.findOne(
           {'id': extensionId},
-          {},
+          {
+            id: 1,
+            name: 1,
+            file: 1
+          },
           function (err, extension) {
 
             res.status((extension ? 200 : 404));

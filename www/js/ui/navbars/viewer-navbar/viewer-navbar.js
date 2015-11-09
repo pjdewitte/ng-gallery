@@ -25,11 +25,7 @@
 //
 //
 ///////////////////////////////////////////////////////////////////////////////
-angular.module('Autodesk.ADN.NgGallery.Navbar.ViewerNavbar',
-    [
-        'mgcrea.ngStrap.tooltip',
-        'mgcrea.ngStrap.helpers.parseOptions'
-    ])
+angular.module('Autodesk.ADN.NgGallery.Navbar.ViewerNavbar', [])
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -43,39 +39,12 @@ angular.module('Autodesk.ADN.NgGallery.Navbar.ViewerNavbar',
             //
             //
             ///////////////////////////////////////////////////////////////////
-            $scope.$watch('selectedLayoutMode', function() {
-
-                $scope.$emit(
-                    'viewer.layout-mode-changed',
-                    { selectedLayoutMode: $scope.selectedLayoutMode});
-            });
-
-            ///////////////////////////////////////////////////////////////////
-            //
-            //
-            ///////////////////////////////////////////////////////////////////
-            $scope.$watch('selectedItems', function() {
-
-                if(!$scope.selectedItems.length) {
-                    $scope.selectedLayoutMode = $scope.modes[0].value;
-                }
-
-                $scope.modeDisabled = !$scope.selectedItems.length;
-
-                $scope.$emit(
-                    'viewer.viewable-path-selected',
-                    { selectedItems: $scope.selectedItems});
-            });
-
-            ///////////////////////////////////////////////////////////////////
-            //
-            //
-            ///////////////////////////////////////////////////////////////////
             $scope.$watch('searchInput', function() {
 
                 $scope.$emit(
-                  'viewer.search-input-modified',
-                  { searchInput: $scope.searchInput});
+                  'viewer-navbar.search-input-modified', {
+                      searchInput: $scope.searchInput
+                  });
             });
 
             ///////////////////////////////////////////////////////////////////
@@ -84,55 +53,72 @@ angular.module('Autodesk.ADN.NgGallery.Navbar.ViewerNavbar',
             ///////////////////////////////////////////////////////////////////
             $scope.$on('viewer.viewable-path-loaded', function (event, data) {
 
-                data.pathInfoCollection.path3d.forEach(function(path3d) {
+                data.viewablePath.forEach(function(path) {
 
-                    $scope.items.push({
-                        value: path3d.path,
-                        label: $sce.trustAsHtml(path3d.name)
+                    $scope.viewablePath.push({
+                        selected: ($scope.viewablePath.length == 0),
+                        name: $sce.trustAsHtml(path.name),
+                        path: path.path,
+                        type: path.type
                     });
                 });
-
-                data.pathInfoCollection.path2d.forEach(function(path2d) {
-
-                    $scope.items.push({
-                        value: path2d.path,
-                        label: $sce.trustAsHtml(path2d.name)
-                    });
-                });
-
-                if($scope.items.length) {
-                    $scope.modeDisabled = false;
-                }
             });
 
             ///////////////////////////////////////////////////////////////////
             //
             //
             ///////////////////////////////////////////////////////////////////
-            $scope.modes = [
-                {
-                    value: 'VIEWER_LAYOUT_MODE_ROW_FITTED',
-                    label: $sce.trustAsHtml('Layout Mode: Row - Fitted')
-                },
-                {
-                    value: 'VIEWER_LAYOUT_MODE_ROW',
-                    label: $sce.trustAsHtml('Layout Mode: Row')
-                },
-                {
-                    value: 'VIEWER_LAYOUT_MODE_COLUMN_FITTED',
-                    label: $sce.trustAsHtml('Layout Mode: Column - Fitted')
-                }
-            ];
+            $scope.$on('viewer.load-navbar', function (event, data) {
 
-            $scope.selectedLayoutMode = $scope.modes[0].value;
+                var $multiselectPath = $(".multiselect-path").multiselect({
 
-            $scope.modeDisabled = false;
+                    selectedList: 1,
+                    noneSelectedText: "Select Active Views",
+                    header: "Select Active Views",
 
-            $scope.selectedItems = [];
+                    click: function(event, ui){
+
+                        if(ui.checked) {
+                            $scope.$emit(
+                              'viewer-navbar.activate-path', {
+                                  path: ui.value
+                              });
+                        }
+                        else {
+                            $scope.$emit(
+                              'viewer-navbar.deactivate-path', {
+                                  path: ui.value
+                              });
+                        }
+                    }
+                }).multiselectfilter();
+
+                var $multiselectLayout = $(".multiselect-layout").multiselect({
+
+                    multiple:false,
+                    selectedList: 1,
+                    header: "Select Layout Mode",
+
+                    click: function(event, ui){
+
+                        $scope.$emit(
+                          'viewer-navbar.layout-mode-changed', {
+                              mode: ui.value
+                          });
+                    }
+                });
+
+                $multiselectLayout.multiselect(
+                  $scope.viewablePath.length > 1 ? 'enable':'disable');
+            });
+
+            ///////////////////////////////////////////////////////////////////
+            //
+            //
+            ///////////////////////////////////////////////////////////////////
+            $scope.viewablePath = [];
 
             $scope.searchInput = "";
-
-            $scope.items = [];
     }]);
 
 

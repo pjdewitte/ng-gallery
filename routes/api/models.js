@@ -23,9 +23,12 @@ var flowFactory = require('../flow');
 var express = require('express');
 var request = require('request');
 var mongo = require('mongodb');
+var path = require('path');
+var rm = require('rimraf');
+var _ = require('lodash');
 var fs = require('fs');
 
-module.exports = function(db, lmv) {
+module.exports = function(db, config, lmv) {
 
   var router = express.Router();
 
@@ -64,8 +67,8 @@ module.exports = function(db, lmv) {
       }
 
       var flow = flowFactory.createFlow(
-        'uploads/temp/',
-        'models');
+        'data/',
+        'temp');
 
       flow.post(req, {useChunks: true},
         function (status,
@@ -83,7 +86,7 @@ module.exports = function(db, lmv) {
   /////////////////////////////////////////////////////////////////////
   var keyMap = {};
 
-  var host =
+  var host = null;
 
   router.post('/register/:filename', function (req, res) {
 
@@ -92,11 +95,11 @@ module.exports = function(db, lmv) {
     var filename =  req.params.filename;
 
     var stream = fs.createWriteStream(
-      'uploads/temp/models/' + filename);
+      'data/temp/' + filename);
 
     var flow = flowFactory.createFlow(
-      'uploads/temp/',
-      'models');
+      'data/',
+      'temp');
 
     var objectKey = guid() + '.' + getFileExt(filename);
 
@@ -135,7 +138,7 @@ module.exports = function(db, lmv) {
     lmv.getBucket(config.bucketKey, true, bucketData).then(
       function(response) {
 
-        var filename = 'uploads/temp/models/' + file;
+        var filename = 'data/temp/' + file;
 
         lmv.resumableUpload(
           filename,
@@ -331,11 +334,18 @@ module.exports = function(db, lmv) {
       return;
     }
 
+    var fields = {
+      name: 1,
+      urn: 1
+    };
+
+    if(config.offline) fields.viewablePath = 1;
+
     db.collection('gallery.models', function (err, collection) {
 
       collection.findOne(
         {'_id': new mongo.ObjectId(modelId)},
-        {name: 1, urn: 1},
+        fields,
 
         function (err, model) {
 
@@ -352,9 +362,11 @@ module.exports = function(db, lmv) {
   router.get('/', function (req, res) {
 
     var pageQuery = {
-      name: 1,
-      urn: 1
-    };
+        name: 1,
+        urn: 1
+      };
+
+    if(config.offline) pageQuery.viewablePath = 1;
 
     var fieldQuery = {};
 
@@ -380,16 +392,21 @@ module.exports = function(db, lmv) {
     db.collection('gallery.models', function (err, collection) {
       collection.find(fieldQuery, pageQuery)
         .sort({name: 1}).toArray(
-        function (err, items) {
-
-          var response = items;
+        function (err, models) {
 
           if (err) {
             res.status(204); //HTTP 204: NO CONTENT
             res.err = err;
           }
 
-          res.jsonp(response);
+          models.forEach(function (model) {
+
+            model.downloadable = config.offline;
+
+            model.allowDelete = config.allowDelete;
+          });
+
+          res.jsonp(models);
         });
     });
   });
@@ -450,6 +467,153 @@ module.exports = function(db, lmv) {
 
     transporter.close();
   }
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.get('/download/:modelId', function (req, res) {
+
+    var modelId = req.params.modelId;
+
+    if (modelId.length !== 24) {
+      res.status(404);
+      res.send(null);
+      return;
+    }
+
+    db.collection('gallery.models', function (err, collection) {
+
+      collection.findOne(
+        {'_id': new mongo.ObjectId(modelId)},
+        {name: 1, urn: 1},
+
+        function (err, model) {
+
+          if(!err) {
+
+            res.jsonp('pending');
+
+            lmv.download(model.urn, 'downloads/' + modelId).then(
+
+              function(items){
+
+                var path3d = items.filter(function(item){
+                  return item.type === '3d';
+                });
+
+                var path2d = items.filter(function(item){
+                  return item.type === '2d';
+                });
+
+                model.viewablePath = _.flatten([path3d, path2d]);
+
+                collection.update(
+                  {'_id': new mongo.ObjectID(modelId)},
+                  {$set: {"viewablePath": model.viewablePath}},
+                  {safe: true},
+                  function (err2, cmdResult) {
+
+                  });
+              },
+
+              function(error) {
+
+                console.log('Error downloading model: ' + modelId);
+                console.log(error);
+              }
+            );
+          }
+        });
+    });
+  });
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.post('/drop/:modelId', function (req, res) {
+
+    var modelId = req.params.modelId;
+
+    if (modelId.length !== 24) {
+      res.status(404);
+      res.send(null);
+      return;
+    }
+
+    db.collection('gallery.models', function (err, collection) {
+
+      collection.findOne(
+        {'_id': new mongo.ObjectId(modelId)},
+        {viewablePath: 1},
+
+        function (err, model) {
+
+          if (!err) {
+
+            rm('downloads/' + modelId, function () {
+
+              delete model.viewablePath;
+
+              collection.update(
+                {'_id': new mongo.ObjectID(modelId)},
+                {$set: {"viewablePath": null}},
+                {safe: true},
+                function (err2, cmdResult) {
+
+                  res.jsonp(model);
+                });
+            });
+          }
+        });
+    });
+  });
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////////////
+  router.post('/delete', function (req, res) {
+
+    if(!config.allowDelete) {
+      res.status(401);
+      res.json('unauthorized');
+      return;
+    }
+
+    var payload = req.body;
+
+    var modelId = payload.modelId;
+
+    if (modelId.length !== 24) {
+      res.status(400);
+      res.send(null);
+      return;
+    }
+
+    db.collection('gallery.models', function (err, collection) {
+
+      var queryParams = {_id: new mongo.ObjectId(modelId)};
+
+      collection.remove(
+        queryParams,
+        null,
+        function (error, result) {
+
+          if (error) {
+
+            res.status(400);
+            res.json(error);
+          }
+          else {
+
+            res.json(modelId);
+          }
+        }
+      );
+    });
+  });
 
   /*//////////////////////////////////////////////////////////////////////////////
    //

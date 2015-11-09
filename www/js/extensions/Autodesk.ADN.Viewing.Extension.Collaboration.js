@@ -36,6 +36,8 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   /////////////////////////////////////////////
   
   var _this = this;
+
+  var _vr = false;
   
   /////////////////////////////////////////////
   //
@@ -87,12 +89,12 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     createControls(ctrlGroup);
 
     _this.panel = new Autodesk.ADN.Viewing.Extension.Collaboration.Panel(
-      viewer.container);
+      options.container);
 
     if (options.meetingId.length) {
 
       _this.splash = new Autodesk.ADN.Viewing.Extension.Collaboration.JoinSplashPanel(
-        viewer.container);
+        options.container);
 
       _this.splash.setVisible(true);
     }
@@ -166,14 +168,14 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       if(options.meetingId.length) {
 
         _this.splash = new Autodesk.ADN.Viewing.Extension.Collaboration.JoinSplashPanel(
-          viewer.container);
+          options.container);
 
         _this.splash.setVisible(true);
       }
       else {
 
         _this.splash = new Autodesk.ADN.Viewing.Extension.Collaboration.CreateSplashPanel(
-          viewer.container);
+          options.container);
 
         _this.splash.setVisible(true);
       }
@@ -301,43 +303,53 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     _this.socket.on('Collaboration.UIMessage',
       onUIMessage);
 
+    _this.socket.on('Collaboration.ExtensionMessage',
+      onExtensionMessage);
+
     replacePropPanelPrototype(
       Autodesk.Viewing.Extensions.ViewerPropertyPanel.prototype.setVisible);
   }
 
-  function activateViewerEvents() {
+  function activateViewerEvents(_vr) {
 
-    viewer.addEventListener(
-      Autodesk.Viewing.CAMERA_CHANGE_EVENT,
-      onCameraChanged);
+    if(!_vr) {
 
-    viewer.addEventListener(
-      Autodesk.Viewing.SELECTION_CHANGED_EVENT,
-      onObjectSetChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.CAMERA_CHANGE_EVENT,
+        onCameraChanged);
 
-    viewer.addEventListener(
-      Autodesk.Viewing.ISOLATE_EVENT,
-      onObjectSetChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.SELECTION_CHANGED_EVENT,
+        onObjectSetChanged);
 
-    viewer.addEventListener(
-      Autodesk.Viewing.EXPLODE_CHANGE_EVENT,
-      onObjectSetChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.ISOLATE_EVENT,
+        onObjectSetChanged);
 
-    viewer.addEventListener(
-      Autodesk.Viewing.HIDE_EVENT,
-      onObjectSetChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.EXPLODE_CHANGE_EVENT,
+        onObjectSetChanged);
 
-    viewer.addEventListener(
-      Autodesk.Viewing.SHOW_EVENT,
-      onObjectSetChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.HIDE_EVENT,
+        onObjectSetChanged);
 
-    viewer.addEventListener(
-      Autodesk.Viewing.HIGHLIGHT_EVENT,
-      onObjectSetChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.SHOW_EVENT,
+        onObjectSetChanged);
 
-    viewer.addEventListener(
-      Autodesk.Viewing.RENDER_OPTION_CHANGED_EVENT,
-      onRenderOptionsChanged);
+      viewer.addEventListener(
+        Autodesk.Viewing.HIGHLIGHT_EVENT,
+        onObjectSetChanged);
+
+      viewer.addEventListener(
+        Autodesk.Viewing.RENDER_OPTION_CHANGED_EVENT,
+        onRenderOptionsChanged);
+
+      viewer.addEventListener(
+        Autodesk.Viewing.CUTPLANES_CHANGE_EVENT,
+        onCutPlanesChanged);
+    }
   }
 
   //NAVIGATION_MODE_CHANGED_EVENT
@@ -369,6 +381,10 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     _this.socket.removeListener(
       'Collaboration.UIMessage',
       onUIMessage);
+
+    _this.socket.removeListener(
+      'Collaboration.ExtensionMessage',
+      onExtensionMessage);
   }
 
   function deactivateViewerEvents() {
@@ -408,6 +424,10 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     viewer.removeEventListener(
       Autodesk.Viewing.RENDER_OPTION_CHANGED_EVENT,
       onRenderOptionsChanged);
+
+    viewer.removeEventListener(
+      Autodesk.Viewing.CUTPLANES_CHANGE_EVENT,
+      onCutPlanesChanged);
   }
 
   /////////////////////////////////////////////
@@ -444,11 +464,14 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   //
   //
   /////////////////////////////////////////////
-  function joinMeeting(meetingId, username) {
+  function joinMeeting(meetingId, username, vr) {
+
+    _vr = vr;
 
     activateCollaboration(
       meetingId,
-      username);
+      username,
+      vr);
 
     viewer.addEventListener(
       Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
@@ -489,6 +512,13 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       meetingId: options.meetingId
     };
 
+    if(_vr) {
+
+      viewer.loadExtension('Autodesk.ADN.Viewing.Extension.VR', {
+        requestUserGesture: false
+      });
+    }
+
     setTimeout(function() {
 
       _this.socket.emit('Collaboration.RequestStateInit',
@@ -501,23 +531,9 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   //
   /////////////////////////////////////////////
   function onUsers(collaborationMsg) {
-
-    _this.panel.clearUsers();
-
-    collaborationMsg.users.forEach(function(username){
-
-      _this.panel.addUser(username);
-    });
-
-    _this.panel.addInviteButton();
-
-    var chatPanel = $('#' + _this.panelId + '-chat');
-
-    var offset = (55 + (collaborationMsg.users.length) * 20 + 30);
-
-    chatPanel.css({'height': 'calc(100% - ' + offset + 'px)'});
-
-    chatPanel[0].scrollTop = chatPanel[0].scrollHeight;
+    
+    _this.panel.loadUsers(
+      collaborationMsg.users);
   }
 
   /////////////////////////////////////////////
@@ -563,6 +579,35 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   //
   //
   /////////////////////////////////////////////
+  function onExtensionMessage(collaborationMsg) {
+
+    switch(collaborationMsg.msgId) {
+
+      case 'Collaboration.Extension.Section':
+
+        var cutPlanes = collaborationMsg.cutPlanes.map(
+          function(plane) {
+            return new THREE.Vector4(
+              plane.x,
+              plane.y,
+              plane.z,
+              plane.w);
+          });
+
+        viewer.setCutPlanes(cutPlanes);
+
+        break;
+
+      default:
+
+        break;
+    }
+  }
+
+  /////////////////////////////////////////////
+  //
+  //
+  /////////////////////////////////////////////
   function onObjectSetChanged() {
 
     sendStateMessage('object', OBJECT_FILTER);
@@ -592,6 +637,63 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   //
   //
   /////////////////////////////////////////////
+  function onCutPlanesChanged() {
+
+    var cutPlanes = viewer.getCutPlanes().map(
+      function (plane) {
+        return {
+          x: plane.x,
+          y: plane.y,
+          z: plane.z,
+          w: plane.w
+        }
+      });
+
+    var collaborationMsg = {
+      meetingId: _this.meetingId,
+      msgId: 'Collaboration.Extension.Section',
+      cutPlanes: cutPlanes
+    };
+
+    sendExtensionMessage(collaborationMsg);
+  }
+
+  /////////////////////////////////////////////
+  // A fix for viewer.restoreState
+  // that also restores pivotPoint
+  //
+  /////////////////////////////////////////////
+  function restoreStateWithPivot(state, filter, immediate) {
+
+    function onStateRestored() {
+
+      viewer.removeEventListener(
+        Autodesk.Viewing.VIEWER_STATE_RESTORED_EVENT,
+        onStateRestored);
+
+      if(state.viewport) {
+
+        var pivot = state.viewport.pivotPoint;
+
+        setTimeout(function () {
+
+          viewer.navigation.setPivotPoint(
+            new THREE.Vector3(pivot[0], pivot[1], pivot[2]))
+        }, 1250);
+      }
+    }
+
+    viewer.addEventListener(
+      Autodesk.Viewing.VIEWER_STATE_RESTORED_EVENT,
+      onStateRestored);
+
+    viewer.restoreState(state, filter, immediate);
+  }
+
+  /////////////////////////////////////////////
+  //
+  //
+  /////////////////////////////////////////////
   function onStateChanged(collaborationMsg) {
 
     _this.stopwatch.reset();
@@ -600,7 +702,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
       var state = JSON.parse(collaborationMsg.state);
 
-      viewer.restoreState(
+      restoreStateWithPivot(
         state,
         collaborationMsg.filter,
         true);
@@ -608,6 +710,8 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     catch (ex) {
 
       console.log(ex);
+
+      viewer.resize();
     }
   }
 
@@ -621,11 +725,11 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     try {
 
-      activateViewerEvents();
+      activateViewerEvents(_vr);
 
       var state = JSON.parse(collaborationMsg.state);
 
-      viewer.restoreState(
+      restoreStateWithPivot(
         state,
         collaborationMsg.filter,
         true);
@@ -712,16 +816,31 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   //
   //
   /////////////////////////////////////////////
+  var sendExtensionMessage = _.throttle(
+
+    function (collaborationMsg) {
+
+      _this.socket.emit('Collaboration.ExtensionMessage',
+        collaborationMsg);
+    },
+    600);
+
+  /////////////////////////////////////////////
+  //
+  //
+  /////////////////////////////////////////////
   Autodesk.ADN.Viewing.Extension.Collaboration.Panel = function(
     parentContainer) {
 
-    _this.panelId = guid();
+    var _thisPanel = this;
+
+    var _baseId = guid();
 
     this.users = [];
 
     this.content = document.createElement('div');
 
-    this.content.id = _this.panelId;
+    this.content.id = _baseId;
     this.content.className = 'collaboration-panel-content';
 
     Autodesk.Viewing.UI.DockingPanel.call(
@@ -741,28 +860,28 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     var html = [
 
-      '<div id="' + _this.panelId + '-content">',
-      '<div class="collaboration-panel-users" id="' + _this.panelId + '-users">',
+      '<div id="' + _baseId + '-content">',
+      '<div class="collaboration-panel-users" id="' + _baseId + '-users">',
       '</div>',
-      '<div class="collaboration-panel-chat" id="' + _this.panelId + '-chat">',
+      '<div class="collaboration-panel-chat" id="' + _baseId + '-chat">',
       '</div>',
-      '<input class="collaboration-panel-input-msg" type="text" placeholder="Type a message ..." id="' + _this.panelId + '-input">',
+      '<input class="collaboration-panel-input-msg" type="text" placeholder="Type a message ..." id="' + _baseId + '-input">',
       '</div>'
 
     ].join('\n');
 
-    $('#' + _this.panelId).html(html);
+    $('#' + _baseId).html(html);
 
-    $('#' + _this.panelId + '-input').keyup(function(event) {
+    $('#' + _baseId + '-input').keyup(function(event) {
 
       //on ENTER pressed
       if(event.which === 13) {
 
-        var msg = $('#' + _this.panelId + '-input').val();
+        var msg = $('#' + _baseId + '-input').val();
 
         if(msg.length) {
 
-          $('#' + _this.panelId + '-input').val('');
+          $('#' + _baseId + '-input').val('');
 
           sendChatMessage(msg);
         }
@@ -773,7 +892,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     //
     //
     /////////////////////////////////////////////
-    this.addUser = function(username) {
+    _thisPanel.addUser = function(username) {
 
       this.users.push(username);
 
@@ -789,7 +908,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
       ].join('\n');
 
-      var usersPanel = $('#' + _this.panelId + '-users');
+      var usersPanel = $('#' + _baseId + '-users');
 
       usersPanel.append(htmlUser);
     }
@@ -798,13 +917,11 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     //
     //
     /////////////////////////////////////////////
-    this.addInviteButton = function() {
+    _thisPanel.addInviteButton = function() {
 
       var url = location.protocol + '//' +
         location.host + options.host  + '/collaboration' +
         '?meetingId=' + _this.meetingId;
-
-      var className = 'collaboration-user-even';
 
       var id = guid();
 
@@ -816,16 +933,16 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
       ].join('\n');
 
-      var usersPanel = $('#' + _this.panelId + '-users');
+      var usersPanel = $('#' + _baseId + '-users');
 
       usersPanel.append(html);
 
+      _thisPanel.invitePanel = new Autodesk.ADN.Viewing.Extension.Collaboration.InviteSplashPanel(
+        options.container, url);
+
       $('#' + id).click(function(){
 
-        var invitePanel = new Autodesk.ADN.Viewing.Extension.Collaboration.InviteSplashPanel(
-          viewer.container, url);
-  
-        invitePanel.setVisible(true);
+        _thisPanel.invitePanel.setVisible(true);
       });
     }
 
@@ -843,7 +960,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
       ].join('\n');
 
-      var chatPanel = $('#' + _this.panelId + '-chat');
+      var chatPanel = $('#' + _baseId + '-chat');
 
       chatPanel.append(htmlMsg);
 
@@ -854,19 +971,53 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     //
     //
     /////////////////////////////////////////////
-    this.clearUsers = function() {
+    _thisPanel.clearUsers = function() {
+  
+      _thisPanel.users = [];
 
-      this.users = [];
-
-      $('#' + _this.panelId + '-users > div').each(
+      $('#' + _baseId + '-users > div').each(
         function (idx, child) {
           $(child).remove();
         });
 
-      $('#' + _this.panelId + '-users > button').each(
+      $('#' + _baseId + '-users > button').each(
         function (idx, child) {
           $(child).remove();
         });
+    }
+  
+    /////////////////////////////////////////////
+    //
+    //
+    /////////////////////////////////////////////
+    _thisPanel.loadUsers = function(users) {
+  
+      _thisPanel.clearUsers();
+  
+      users.forEach(function(username){
+  
+        _thisPanel.addUser(username);
+      });
+  
+      _thisPanel.addInviteButton();
+  
+      var chatPanel = $('#' + _baseId + '-chat');
+  
+      var offset = (55 + (users.length) * 20 + 30);
+  
+      chatPanel.css({'height': 'calc(100% - ' + offset + 'px)'});
+  
+      //chatPanel[0].scrollTop = chatPanel[0].scrollHeight;
+    }
+    
+    /////////////////////////////////////////////////////////////
+    // setVisible override (not used in that sample)
+    //
+    /////////////////////////////////////////////////////////////
+    _thisPanel.setVisible = function(show) {
+
+      Autodesk.Viewing.UI.DockingPanel.prototype.
+        setVisible.call(this, show);
     }
   };
 
@@ -882,14 +1033,14 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       this.titleLabel ||
       this.container.id);
 
-    this.closer = this.createCloseButton();
-
     this.container.appendChild(this.title);
-    this.title.appendChild(this.closer);
     this.container.appendChild(this.content);
 
-    this.initializeMoveHandlers(this.title);
+    this.closer = this.createCloseButton();
+    this.title.appendChild(this.closer);
     this.initializeCloseHandler(this.closer);
+
+    this.initializeMoveHandlers(this.title);
   };
 
   /////////////////////////////////////////////
@@ -914,10 +1065,10 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       {shadow: true});
 
     var w = 300;
-    var h = 195;
+    var h = 150;
 
-    var cw = $(viewer.container).width();
-    var ch = $(viewer.container).height();
+    var cw = $(options.container).width();
+    var ch = $(options.container).height();
 
     this.container.style.left = 0.5 * (cw - w) + 'px';
     this.container.style.top =  0.5 * (ch - h) + 'px';
@@ -935,13 +1086,11 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     var html = [
       '<div>',
-      '<br/>',
+      '<hr class="collaboration-spacer">',
       '<input class="collaboration-panel-input-info" type="text" readonly id="' + meetingId + '">',
-      '<br/>',
-      '<br/>',
+      '<hr class="collaboration-spacer">',
       '<input class="collaboration-panel-input-info" type="text" placeholder="Type your display name..." id="' + userId + '" value="Host">',
-      '<br/>',
-      '<br/>',
+      '<hr class="collaboration-spacer">',
       '<button class="btn btn-info btn-collaboration" id="' + startBtnId + '">',
       '<span class="glyphicon glyphicon-play" aria-hidden="true"></span> <label> Start Meeting </label>',
       '</button>',
@@ -1018,10 +1167,26 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       {shadow: true});
 
     var w = 300;
-    var h = 160;
+    var h = 120;
 
-    var cw = $(viewer.container).width();
-    var ch = $(viewer.container).height();
+    var vr = '';
+
+    var vrStartBtnId = guid();
+
+    if(options.mobile) {
+
+      h = 165;
+
+      vr = [
+        '<hr class="collaboration-spacer">',
+        '<button class="btn btn-success btn-collaboration" id="' + vrStartBtnId + '">',
+        '<span class="glyphicon glyphicon-phone" aria-hidden="true"></span> <label> Join in VR</label>',
+        '</button>'
+      ].join('\n');
+    }
+
+    var cw = $(options.container).width();
+    var ch = $(options.container).height();
 
     this.container.style.left = 0.5 * (cw - w) + 'px';
     this.container.style.top =  0.5 * (ch - h) + 'px';
@@ -1035,15 +1200,16 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     var startBtnId = guid();
 
+
     var html = [
       '<div>',
-      '<br/>',
+      '<hr class="collaboration-spacer">',
       '<input class="collaboration-panel-input-info" type="text" placeholder="Type your display name..." id="' + userId + '" value="User">',
-      '<br/>',
-      '<br/>',
+      '<hr class="collaboration-spacer">',
       '<button class="btn btn-info btn-collaboration" id="' + startBtnId + '">',
       '<span class="glyphicon glyphicon-user" aria-hidden="true"></span> <label> Join Meeting</label>',
       '</button>',
+      vr,
       '</div>'
 
     ].join('\n');
@@ -1063,7 +1229,24 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
         _this.panel.setVisible(true);
 
-        joinMeeting(options.meetingId, username);
+        joinMeeting(options.meetingId, username, false);
+      }
+    });
+
+    $('#' + vrStartBtnId).click(function(){
+
+      var username = $('#' + userId).val();
+
+      if(username.length) {
+
+        _this.socket = io.connect(
+          location.hostname + ':' + options.port);
+
+        _this.splash.setVisible(false);
+
+        joinMeeting(options.meetingId, username, true);
+
+        viewer.nextScreenMode();
       }
     });
   };
@@ -1099,6 +1282,8 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   Autodesk.ADN.Viewing.Extension.Collaboration.InviteSplashPanel = function(
     parentContainer, url) {
 
+    var _thisPanel = this;
+
     var panelId = guid();
 
     this.content = document.createElement('div');
@@ -1114,10 +1299,10 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       {shadow: true});
 
     var w = 300;
-    var h = 110;
+    var h = 335;
 
-    var cw = $(viewer.container).width();
-    var ch = $(viewer.container).height();
+    var cw = $(options.container).width();
+    var ch = $(options.container).height();
 
     this.container.style.left = 0.5 * (cw - w) + 'px';
     this.container.style.top =  0.5 * (ch - h) + 'px';
@@ -1127,12 +1312,21 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     this.container.style.resize = "none";
 
+    $(this.container).css({
+      'background-color':'whitesmoke'
+    });
+
     var linkId = guid();
 
     var html = [
       '<div>',
-      '<br/>',
+      '<hr class="collaboration-spacer">',
       '<input class="collaboration-panel-input-info" type="text" readonly id="' + linkId + '">',
+      '<hr class="collaboration-spacer">',
+      '<hr class="collaboration-spacer">',
+      '<div style="margin-left:22px" id="qr-code">',
+        '<img id="qr-img" src="img/adsk/adsk-256x256-32.png" height="256" width="256"/>',
+      '</div>',
       '</div>'
 
     ].join('\n');
@@ -1140,6 +1334,36 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     $('#' + panelId).html(html);
 
     $('#' + linkId).val(url);
+
+    /////////////////////////////////////////////////////////////
+    // setVisible override (not used in that sample)
+    //
+    /////////////////////////////////////////////////////////////
+    _thisPanel.setVisible = function(show) {
+
+      Autodesk.Viewing.UI.DockingPanel.prototype.
+        setVisible.call(this, show);
+
+      if(show & !_thisPanel.qrCode) {
+
+        setTimeout(function() {
+
+          $('#qr-img').css({
+            'display':'none'
+          });
+
+          _thisPanel.qrCode = new QRCode(document.getElementById('qr-code'), {
+            text: url,
+            width: 256,
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+          });
+
+        }, 1500);
+      }
+    }
   };
 
   Autodesk.ADN.Viewing.Extension.Collaboration.InviteSplashPanel.prototype = Object.create(
@@ -1168,7 +1392,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   var css = [
 
     'button.btn-collaboration {',
-      'width: 82%;',
+      'width: 90%;',
       'margin-left: 5%;',
     '}',
 
@@ -1270,15 +1494,20 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       'height: 22px;',
       'border-radius: 5px;',
       'background-color: rgb(200, 200, 200);',
-      'width: 88%;',
+      'width: 90%;',
       'margin-left: 5%;',
     '}',
 
     'button.collaboration-invite-btn{',
-      'width: calc(100% - 33px);',
-      'height: 18px;',
+      'width: calc(100% - 8px);',
+      'height: 34px;',
       'margin-top: 5px;',
-      'margin-left: 2px;',
+      'margin-left: 4px;',
+    '}',
+
+    'hr.collaboration-spacer {',
+      'margin:6px;',
+      'border:0;',
     '}'
 
   ].join('\n');

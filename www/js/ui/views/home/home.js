@@ -54,13 +54,61 @@ angular.module('Autodesk.ADN.NgGallery.View.Home', [])
 
                   return !$scope.modelsFilterValue ||
                     regExp.test(model.name);
-              };
+              }
+
+              ///////////////////////////////////////////////////////////////////
+              // Cannot rely on angular filtering to be compatible with stroll.js
+              //
+              ///////////////////////////////////////////////////////////////////
+              $scope.$watch('modelsFilterValue', function() {
+
+                filterItems($scope.modelsFilterValue);
+              });
+
+              function filterItems(filter) {
+
+                var colors = ['#FFFFFF', 'rgba(162, 201, 134, 0.41)'];
+
+                var idx = 0;
+
+                var $items = $("li.model-item");
+
+                if($items.length) {
+
+                  $items.each(function () {
+
+                    var $item = $(this);
+
+                    if (!filter.length || $item.text().toLowerCase().indexOf(
+                        filter.toLowerCase()) > 0) {
+
+                      $item.find('> .row').css({
+                        'background-color': colors[(idx++) % 2]
+                      });
+
+                      $item.css({
+                        'display': 'block'
+                      });
+                    }
+                    else {
+
+                      $item.css({
+                        'display': 'none'
+                      });
+                    }
+                  });
+
+                  if (!AppState.mobile) {
+                    stroll.bind('.stroll');
+                  }
+                }
+              }
 
               ///////////////////////////////////////////////////////////////////
               //
               //
               ///////////////////////////////////////////////////////////////////
-              function loadModels() {
+              function loadModels(done) {
 
                 //fetches 10 models at a time
 
@@ -68,10 +116,10 @@ angular.module('Autodesk.ADN.NgGallery.View.Home', [])
 
                 var skip = 0;
 
-                loadModelsRec(skip, limit)
+                loadModelsRec(skip, limit, done);
               }
 
-              function loadModelsRec(skip, limit) {
+              function loadModelsRec(skip, limit, done) {
 
                   Model.query({skip: skip, limit:limit}, function(models) {
 
@@ -91,41 +139,157 @@ angular.module('Autodesk.ADN.NgGallery.View.Home', [])
                                 model.thumbnail =
                                   "data:image/png;base64," + response.thumbnail.data;
                               });
-
-                            var fileId = ViewAndData.client.fromBase64(model.urn);
-
-                            // role
-                            ViewAndData.client.getSubItemsWithProperties(
-                              fileId,
-                              {type: 'geometry'},
-                              function (items) {
-                                if (items.length > 0) {
-                                  model.type = items[0].role;
-                                }
-                              },
-                              function (error) {
-
-                              }
-                            );
-
-                            //progress
-                            ViewAndData.client.getViewable(
-                              fileId,
-                              function (viewable) {
-
-                                model.progress = viewable.progress;
-                              },
-                              function (error) {
-
-                              }, 'status');
                           }
                           catch (ex) {
                             console.log(ex);
                           }
                         });
 
-                      loadModelsRec(skip + limit, limit);
+                      loadModelsRec(skip + limit, limit, done);
                     }
+                    else {
+                      done();
+                    }
+                  });
+
+                filterItems($scope.modelsFilterValue);
+              }
+
+              ///////////////////////////////////////////////////////////////////
+              //
+              //
+              ///////////////////////////////////////////////////////////////////
+              function onModelsLoaded() {
+
+                if(!AppState.mobile) {
+                  stroll.bind('.stroll');
+                }
+
+                ViewAndData.client.onInitialized(function() {
+
+                  $scope.models.forEach(function(model) {
+
+                    var fileId = ViewAndData.client.fromBase64(model.urn);
+
+                    // role
+                    ViewAndData.client.getSubItemsWithProperties(
+                      fileId,
+                      {type: 'geometry'},
+                      function (items) {
+                        if (items.length > 0) {
+                          model.type = items[0].role;
+                        }
+                      },
+                      function (error) {
+
+                      }
+                    );
+
+                    //progress
+                    ViewAndData.client.getViewable(
+                      fileId,
+                      function (viewable) {
+
+                        model.progress = viewable.progress;
+                      },
+                      function (error) {
+
+                      }, 'status');
+                  });
+                });
+              }
+
+              ///////////////////////////////////////////////////////////////////
+              //
+              //
+              ///////////////////////////////////////////////////////////////////
+              $scope.download = function (modelId) {
+
+                var models = _.filter($scope.models, function(model) {
+
+                  return model._id == modelId;
+                });
+
+                $.get('api/models/download/' + modelId, function(response) {
+
+                  models[0].downloading = true;
+
+                  //simple polling every 5 sec
+                  var pollingId = setInterval(function() {
+
+                    $.get('api/models/' + modelId, function(model) {
+
+                      if(model.viewablePath) {
+
+                        models[0].viewablePath = model.viewablePath;
+                        clearInterval(pollingId);
+                      }
+                    });
+                  }, 5000);
+                });
+              }
+
+              ///////////////////////////////////////////////////////////////////
+              //
+              //
+              ///////////////////////////////////////////////////////////////////
+              $scope.drop = function (modelId) {
+
+                var models = _.filter($scope.models, function(model) {
+
+                  return model._id == modelId;
+                });
+
+                $.post('api/models/drop/' + modelId, function(response){
+
+                  models[0].viewablePath = null;
+                });
+              }
+
+              ///////////////////////////////////////////////////////////////////
+              //
+              //
+              ///////////////////////////////////////////////////////////////////
+              $scope.delete = function (model) {
+
+                var args = {
+                  eventId: Toolkit.guid(),
+                  model: model,
+                  caption: 'Delete Model',
+                  message: "Are you sure you want to delete this model?" +
+                  "<br> <b>" + model.name + "</b>"
+                };
+
+                $scope.$emit('app.EmitMessage', {
+                  msgId:'dlg.itemDlg',
+                  msgArgs: args
+                });
+
+                var listener = $scope.$on(args.eventId,
+
+                  function (event, data) {
+
+                    var modelId = data.args.callingArgs.model._id;
+
+                    var payload = {
+                      modelId: modelId
+                    };
+
+                    Model.delete(JSON.stringify(payload),
+                      function (response) {
+
+                      });
+
+                    $scope.models.forEach(function(model, idx){
+
+                      if(modelId === model._id) {
+
+                        $scope.models.splice(idx, 1);
+                        return;
+                      }
+                    });
+
+                    listener();
                   });
               }
 
@@ -133,16 +297,15 @@ angular.module('Autodesk.ADN.NgGallery.View.Home', [])
               //
               //
               ///////////////////////////////////////////////////////////////////
-              ViewAndData.client.onInitialized(function() {
-
-                loadModels();
-              });
+              loadModels(onModelsLoaded);
 
               ///////////////////////////////////////////////////////////////////
               //
               //
               ///////////////////////////////////////////////////////////////////
               AppState.pageTitle = 'View & Data Gallery';
+
+              $scope.modelsFilterValue = '';
 
               AppState.activeView = 'home';
 

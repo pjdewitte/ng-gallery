@@ -1,61 +1,23 @@
+<div id="views-container" style="height:calc(100vh - 64px); position: relative">
 
-<div id="viewerId" ui-layout options="{ flow:'row', dividerSize: 8}" style={{viewerStyle}}>
-
-    <div ui-layout-container>
-        <div ui-layout="{flow : 'column', dividerSize: 8}" >
-
-            <!--div ui-layout-container size="30%" style="background-color: #DBDBDB">
-
-                <div ng-include="'js/ui/controls/treeview/treeview.html'"
-                     id="viewer-treeview"
-                     style="height: 50px;">
-
-                </div>
-
-            </div-->
-
-            <div ui-layout-container size="100%" id="viewer-container">
-
-                <div ng-show="viewerNavbarVisible" ng-include="'js/ui/navbars/viewer-navbar/viewer-navbar.html'"
-                     id="viewer-navbar"
-                     style="height: 50px;">
-                </div>
-
-                <div class="loader-background">
-
-                </div>
-
-                <adn-viewer-container
-                    url="{{tokenUrl}}"
-                    urn="{{docUrn}}"
-                    config="{{viewerContainerConfig}}"
-                    ng-style="{'width':'100%', 'height': '100%'}"
-                    on-viewer-factory-initialized="onViewerFactoryInitialized(factory)"
-                    on-viewable-path="onViewablePath(pathInfoCollection)">
-
-                    <div ng-repeat= "path in selectedPath" style="width:100%; height: 100%;">
-
-                        <adn-viewer  style="height: 1000px;"
-                            path="{{path}}"
-                            config="{{viewerConfig}}"
-                            on-destroy="onDestroy(viewer)"
-                            on-path-loaded="onPathLoaded(viewer, path)"
-                            on-viewer-initialized="onViewerInitialized(viewer)"
-                            ng-style="{'width':viewerConfig.width, 'height': viewerConfig.height, 'float': 'left'}">
-                        </adn-viewer>
-
-                        <div ng-hide="$last"
-                             ng-style="{'width':viewerConfig.splitterWidth, 'height': viewerConfig.splitterHeight, 'float': 'left', 'background-color': '#979090'}">
-                        </div>
-
-                    </div>
-
-                </adn-viewer-container>
-
-            </div>
-        </div>
+    <div ng-show="viewerNavbarVisible" ng-include="'js/ui/navbars/viewer-navbar/viewer-navbar.html'"
+         id="viewer-navbar"
+         style="height:50px;">
     </div>
+
+    <div ng-repeat="view in views">
+
+        <viewer-div id="{{view.id}}"
+                    on-create="onViewerDivCreated(id)"
+                    on-destroy="onViewerDivDestroyed(id)"
+                    ng-style="{'width':view.width, 'height':view.height, 'float':'left', 'position':'relative'}">
+
+        </viewer-div>
+
+        <div ng-hide="$last"
+             ng-style="{'width':view.splitter.width, 'height':view.splitter.height, 'float':'left', 'background-color':'#979090'}">
+        </div>
+
+    </div>
+
 </div>
-
-
-

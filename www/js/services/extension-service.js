@@ -23,8 +23,6 @@ angular.module('Autodesk.ADN.NgGallery.Service.Resource.Extension', [])
 
   .factory('Extension', ['$resource', function($resource) {
 
-    //return $resource(config.host + '/api/extensions/:extensionId');
-
     var actions = {
       //'all':      {method:'GET', isArray:true},
       //'get':      {method:'GET'},
