@@ -4,7 +4,7 @@
 ##Description
 
 
-A comprehensive sample using Autodesk View & Data API powered by Node.js/MongoDb backend and an AngularJs frontend
+A comprehensive sample using Autodesk View & Data API powered by Node.js/MongoDb backend with an AngularJs frontend
 
 ##Setup/Usage Instructions
 
@@ -20,7 +20,7 @@ A comprehensive sample using Autodesk View & Data API powered by Node.js/MongoDb
 
 * You need to create 3 collections in your database: 'gallery.models', 'gallery.extensions', 'gallery.thumbnails'
 
-* You need to populate the 'gallery.models' with uploaded models translated with View & Data API (see section "Uploading your models for View & Data API" below), check the response from that [REST API](http://viewer.autodesk.io/node/ng-gallery/api/models) to see how a populated database needs to look like.
+* You need to populate the 'gallery.models' with uploaded models translated with View & Data API (see section "Uploading your models for View & Data API" below), check the response from that [REST API](http://viewer.autodesk.io/node/gallery/api/models) to see how a populated database needs to look like.
 
 * Set your database settings in config-server.js according to your MongoDb install
 
@@ -35,7 +35,7 @@ A comprehensive sample using Autodesk View & Data API powered by Node.js/MongoDb
         gulp build-prod (for minified version)
 
 * Run the server: "node server.js" from command line
-* Connect to server locally using a WebGL-compatible browser: http://localhost:3000/node/ng-gallery
+* Connect to server locally using a WebGL-compatible browser: http://localhost:3000/node/gallery
 
 Uploading your models for View & Data API:
 
@@ -46,7 +46,7 @@ Uploading your models for View & Data API:
 
 ##Test the Live version
 
-[Ng Gallery](http://viewer.autodesk.io/node/ng-gallery)
+[Ng Gallery](http://viewer.autodesk.io/node/gallery)
 
 
 ## License
