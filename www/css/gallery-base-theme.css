@@ -894,11 +894,14 @@
   background-size: cover;
 }
 #gallery-home .page-header.api-detail-header.view-and-data-api {
-  background: url("../img/banner.svg") transparent;
-  position: relative;
+  /*background: url("../img/banner.jpg") transparent;*/
+  position: absolute;
   background-size: cover;
   opacity: .85;
+  height: 300px;
+  top: 30px;
 }
+
 #gallery-home .page-header.api-detail-header.autocad-api {
   background: url("../img/Banner_AutoCADDetail.png") transparent;
   position: relative;

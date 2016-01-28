@@ -19,7 +19,6 @@
 
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.ExtensionManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.AnimationManager");
-require("../../../extensions/Autodesk.ADN.Viewing.Extension.ControlSelector");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.StateManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.EmbedManager");
@@ -60,8 +59,8 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-Local',
   ///////////////////////////////////////////////////////////////////////////
   .controller('Autodesk.ADN.NgGallery.View.Viewer-Local.Controller',
 
-  ['$rootScope', '$scope', '$timeout', 'Model', 'Toolkit', 'AppState',
-    function($rootScope, $scope, $timeout, Model, Toolkit, AppState) {
+  ['$rootScope', '$scope', '$timeout', 'Model', 'Toolkit', 'AppState', 'Channel',
+    function($rootScope, $scope, $timeout, Model, Toolkit, AppState, Channel) {
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -92,9 +91,12 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-Local',
 
           if(id === view.id) {
 
-            view.viewer.finish();
+            if(view.viewer) {
 
-            view.viewer = null;
+              view.viewer.finish();
+
+              view.viewer = null;
+            }
 
             $scope.views.splice(idx, 1);
           }
@@ -361,8 +363,10 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-Local',
         viewer.loadExtension(
           'Autodesk.ADN.Viewing.Extension.ExtensionManager', {
             index: 2,
+            showHidden: true,
             controlGroup: 'Gallery',
             apiUrl: configClient.ApiURL + '/extensions',
+            extensionsChannel: Channel.getChannel('extensions.connect'),
             extensionsUrl: configClient.ApiURL + '/extensions/transpile',
             extensionsSourceUrl: configClient.host + '/uploads/extensions'
           });
@@ -392,11 +396,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-Local',
         });
 
         viewer.unloadExtension("Autodesk.Section");
-
-        viewer.loadExtension(
-          'Autodesk.ADN.Viewing.Extension.ControlSelector', {
-            isMobile: Toolkit.mobile().isAny()
-          });
       }
 
       ///////////////////////////////////////////////////////////////////
@@ -473,11 +472,11 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-Local',
           Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
           onGeometryLoaded);
 
-        viewer.load(view.path);
+        viewer.loadModel(view.path);
 
         view.viewer = viewer;
 
-        loadCollaboration(viewer, view.path, container);
+        loadCollaboration(viewer, view.path, viewer.container);
       }
 
       ///////////////////////////////////////////////////////////////////////
@@ -488,6 +487,20 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-Local',
 
         removeView(id);
       }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$on('$destroy', function () {
+
+        $scope.views.forEach(function(view){
+
+          view.viewer.finish();
+
+          view.viewer = null;
+        });
+      });
 
       ///////////////////////////////////////////////////////////////////////
       //

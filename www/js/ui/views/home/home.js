@@ -23,294 +23,293 @@
 ///////////////////////////////////////////////////////////////////////////
 angular.module('Autodesk.ADN.NgGallery.View.Home', [])
 
-    ///////////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////////
-    .config(['$routeProvider', function($routeProvider) {
+  ///////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////
+  .config(['$routeProvider', function($routeProvider) {
 
-            $routeProvider.when('/home', {
-                templateUrl: './js/ui/views/home/home.html',
-                controller: 'Autodesk.ADN.NgGallery.View.Home.Controller'
-            });
-        }])
+    $routeProvider.when('/home', {
+      templateUrl: './js/ui/views/home/home.html',
+      controller: 'Autodesk.ADN.NgGallery.View.Home.Controller'
+    });
+  }])
 
-    ///////////////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////////////
-    .controller('Autodesk.ADN.NgGallery.View.Home.Controller',
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  //
+  ///////////////////////////////////////////////////////////////////////////
+  .controller('Autodesk.ADN.NgGallery.View.Home.Controller',
 
-        ['$scope', 'ViewAndData', 'Model', 'Thumbnail', 'AppState', 'Toolkit',
-            function($scope, ViewAndData, Model, Thumbnail, AppState, Toolkit) {
+  ['$scope', 'ViewAndData', 'Model', 'Thumbnail', 'AppState', 'Toolkit',
+    function($scope, ViewAndData, Model, Thumbnail, AppState, Toolkit) {
 
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              $scope.searchFilter = function (model) {
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.searchFilter = function (model) {
 
-                  var regExp = new RegExp($scope.modelsFilterValue, 'i');
+        var regExp = new RegExp($scope.modelsFilterValue, 'i');
 
-                  return !$scope.modelsFilterValue ||
-                    regExp.test(model.name);
-              }
+        return !$scope.modelsFilterValue ||
+          regExp.test(model.name);
+      }
 
-              ///////////////////////////////////////////////////////////////////
-              // Cannot rely on angular filtering to be compatible with stroll.js
-              //
-              ///////////////////////////////////////////////////////////////////
-              $scope.$watch('modelsFilterValue', function() {
+      ///////////////////////////////////////////////////////////////////
+      // Cannot rely on angular filtering to be compatible with stroll.js
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$watch('modelsFilterValue', function() {
 
-                filterItems($scope.modelsFilterValue);
+        filterItems();
+      });
+
+      function filterItems() {
+
+        var filter = $scope.modelsFilterValue;
+
+        var colors = ['rgba(124, 183, 155, 0.42)', 'rgba(66, 151, 111, 0.69)'];
+
+        var idx = 0;
+
+        var $items = $("li.model-item");
+
+        if($items.length) {
+
+          $items.each(function () {
+
+            var $item = $(this);
+
+            if (!filter.length || $item.text().toLowerCase().indexOf(
+                filter.toLowerCase()) > 0) {
+
+              $item.find('> .row').css({
+                'background-color': colors[(idx++) % 2]
               });
 
-              function filterItems(filter) {
+              $item.css({
+                'display': 'block'
+              });
+            }
+            else {
 
-                var colors = ['#FFFFFF', 'rgba(162, 201, 134, 0.41)'];
+              $item.css({
+                'display': 'none'
+              });
+            }
+          });
 
-                var idx = 0;
+          if (!AppState.mobile) {
+            stroll.bind('.stroll');
+          }
+        }
+      }
 
-                var $items = $("li.model-item");
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function loadModels(done) {
 
-                if($items.length) {
+        //fetches 10 models at a time
 
-                  $items.each(function () {
+        var limit = 10;
 
-                    var $item = $(this);
+        var skip = 0;
 
-                    if (!filter.length || $item.text().toLowerCase().indexOf(
-                        filter.toLowerCase()) > 0) {
+        loadModelsRec(skip, limit, done);
+      }
 
-                      $item.find('> .row').css({
-                        'background-color': colors[(idx++) % 2]
-                      });
+      function loadModelsRec(skip, limit, done) {
 
-                      $item.css({
-                        'display': 'block'
-                      });
-                    }
-                    else {
+        Model.query({skip: skip, limit:limit}, function(models) {
 
-                      $item.css({
-                        'display': 'none'
-                      });
-                    }
+            models.forEach(function(model) {
+
+              try {
+
+                // set as default
+                model.thumbnail = "img/adsk/adsk-128x128-32.png";
+
+                $scope.models.push(model);
+
+                Thumbnail.get({modelId: model._id},
+                  function (response) {
+                    model.thumbnail =
+                      "data:image/png;base64," + response.thumbnail.data;
                   });
+              }
+              catch (ex) {
+                console.log(ex);
+              }
+            });
 
-                  if (!AppState.mobile) {
-                    stroll.bind('.stroll');
-                  }
+            filterItems();
+
+            if(models.length == limit) {
+
+              loadModelsRec(skip + limit, limit, done);
+            }
+            else {
+
+              done();
+            }
+        });
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function onModelsLoaded() {
+
+        ViewAndData.client.onInitialized(function() {
+
+          $scope.models.forEach(function(model) {
+
+            var fileId = ViewAndData.client.fromBase64(model.urn);
+
+            // role
+            ViewAndData.client.getSubItemsWithProperties(
+              fileId,
+              {type: 'geometry'},
+              function (items) {
+                if (items.length > 0) {
+                  model.type = items[0].role;
                 }
+              },
+              function (error) {
+
               }
+            );
 
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              function loadModels(done) {
+            //progress
+            ViewAndData.client.getViewable(
+              fileId,
+              function (viewable) {
 
-                //fetches 10 models at a time
+                model.progress = viewable.progress;
+              },
+              function (error) {
 
-                var limit = 10;
+              }, 'status');
+          });
+        });
+      }
 
-                var skip = 0;
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.download = function (model) {
 
-                loadModelsRec(skip, limit, done);
+        $.get('api/models/download/' + model._id, function(response) {
+
+          model.downloading = true;
+
+          //simple polling every 5 sec
+          var pollingId = setInterval(function() {
+
+            $.get('api/models/' + model._id, function(response) {
+
+              if(response.viewablePath) {
+
+                model.viewablePath = response.viewablePath;
+
+                model.downloading = false;
+
+                clearInterval(pollingId);
               }
+            });
+          }, 5000);
+        });
+      }
 
-              function loadModelsRec(skip, limit, done) {
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.drop = function (model) {
 
-                  Model.query({skip: skip, limit:limit}, function(models) {
+        $.post('api/models/drop/' + model._id, function(response){
 
-                    if(models.length) {
+          model.viewablePath = null;
+        });
+      }
 
-                      models.forEach(function(model) {
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.delete = function (model) {
 
-                          try {
+        var args = {
+          eventId: Toolkit.guid(),
+          model: model,
+          caption: 'Delete Model',
+          message: "Are you sure you want to delete this model?" +
+          "<br> <b>" + model.name + "</b>"
+        };
 
-                            // set as default
-                            model.thumbnail = "img/adsk/adsk-128x128-32.png";
+        $scope.$emit('app.EmitMessage', {
+          msgId:'dlg.itemDlg',
+          msgArgs: args
+        });
 
-                            $scope.models.push(model);
+        var listener = $scope.$on(args.eventId,
 
-                            Thumbnail.get({modelId: model._id},
-                              function (response) {
-                                model.thumbnail =
-                                  "data:image/png;base64," + response.thumbnail.data;
-                              });
-                          }
-                          catch (ex) {
-                            console.log(ex);
-                          }
-                        });
+          function (event, data) {
 
-                      loadModelsRec(skip + limit, limit, done);
-                    }
-                    else {
-                      done();
-                    }
-                  });
+            var modelId = data.args.callingArgs.model._id;
 
-                filterItems($scope.modelsFilterValue);
+            var payload = {
+              modelId: modelId
+            };
+
+            Model.delete(JSON.stringify(payload),
+              function (response) {
+
+              });
+
+            $scope.models.forEach(function(model, idx){
+
+              if(modelId === model._id) {
+
+                $scope.models.splice(idx, 1);
+                return;
               }
+            });
 
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              function onModelsLoaded() {
+            listener();
+          });
+      }
 
-                if(!AppState.mobile) {
-                  stroll.bind('.stroll');
-                }
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      AppState.pageTitle = 'View & Data Gallery';
 
-                ViewAndData.client.onInitialized(function() {
+      $scope.modelsFilterValue = '';
 
-                  $scope.models.forEach(function(model) {
+      AppState.activeView = 'home';
 
-                    var fileId = ViewAndData.client.fromBase64(model.urn);
+      AppState.showNavbar = true;
 
-                    // role
-                    ViewAndData.client.getSubItemsWithProperties(
-                      fileId,
-                      {type: 'geometry'},
-                      function (items) {
-                        if (items.length > 0) {
-                          model.type = items[0].role;
-                        }
-                      },
-                      function (error) {
+      $scope.models = [];
 
-                      }
-                    );
+      $(window).resize(function(){
 
-                    //progress
-                    ViewAndData.client.getViewable(
-                      fileId,
-                      function (viewable) {
+        if (!AppState.mobile) {
+          stroll.bind('.stroll');
+        }
+      });
 
-                        model.progress = viewable.progress;
-                      },
-                      function (error) {
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      loadModels(onModelsLoaded);
 
-                      }, 'status');
-                  });
-                });
-              }
-
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              $scope.download = function (modelId) {
-
-                var models = _.filter($scope.models, function(model) {
-
-                  return model._id == modelId;
-                });
-
-                $.get('api/models/download/' + modelId, function(response) {
-
-                  models[0].downloading = true;
-
-                  //simple polling every 5 sec
-                  var pollingId = setInterval(function() {
-
-                    $.get('api/models/' + modelId, function(model) {
-
-                      if(model.viewablePath) {
-
-                        models[0].viewablePath = model.viewablePath;
-                        clearInterval(pollingId);
-                      }
-                    });
-                  }, 5000);
-                });
-              }
-
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              $scope.drop = function (modelId) {
-
-                var models = _.filter($scope.models, function(model) {
-
-                  return model._id == modelId;
-                });
-
-                $.post('api/models/drop/' + modelId, function(response){
-
-                  models[0].viewablePath = null;
-                });
-              }
-
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              $scope.delete = function (model) {
-
-                var args = {
-                  eventId: Toolkit.guid(),
-                  model: model,
-                  caption: 'Delete Model',
-                  message: "Are you sure you want to delete this model?" +
-                  "<br> <b>" + model.name + "</b>"
-                };
-
-                $scope.$emit('app.EmitMessage', {
-                  msgId:'dlg.itemDlg',
-                  msgArgs: args
-                });
-
-                var listener = $scope.$on(args.eventId,
-
-                  function (event, data) {
-
-                    var modelId = data.args.callingArgs.model._id;
-
-                    var payload = {
-                      modelId: modelId
-                    };
-
-                    Model.delete(JSON.stringify(payload),
-                      function (response) {
-
-                      });
-
-                    $scope.models.forEach(function(model, idx){
-
-                      if(modelId === model._id) {
-
-                        $scope.models.splice(idx, 1);
-                        return;
-                      }
-                    });
-
-                    listener();
-                  });
-              }
-
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              loadModels(onModelsLoaded);
-
-              ///////////////////////////////////////////////////////////////////
-              //
-              //
-              ///////////////////////////////////////////////////////////////////
-              AppState.pageTitle = 'View & Data Gallery';
-
-              $scope.modelsFilterValue = '';
-
-              AppState.activeView = 'home';
-
-              AppState.showNavbar = true;
-
-              $scope.models = [];
     }]);
-

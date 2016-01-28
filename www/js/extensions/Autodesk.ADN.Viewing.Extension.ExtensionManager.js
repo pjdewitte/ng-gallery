@@ -71,7 +71,7 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
         extensions.forEach(function(extension){
 
             //hidden extensions start with '_'
-            if(!extension.id.startsWith('_')) {
+            if(!extension.id.startsWith('_') || options.showHidden) {
 
                 extension.handler = function() {
 
@@ -152,7 +152,7 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
     /////////////////////////////////////////////////////////
     _this.onExtensionManagerClicked = function() {
 
-        _panel.setVisible(true);
+        _panel.toggleVisibility();
     };
 
     /////////////////////////////////////////////////////////
@@ -257,8 +257,7 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
           .done(function () {
 
               viewer.loadExtension(extension.id, {
-                  connect: options.connect,
-                  disconnect: options.disconnect
+                  channel: options.extensionsChannel
               });
           })
           .fail(function (jqxhr, settings, exception) {
@@ -274,13 +273,15 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
       parentContainer,
       baseId)
     {
-        this.content = document.createElement('div');
+        var _thisPanel = this;
 
-        this.content.id = baseId + 'PanelContentId';
-        this.content.className = 'extension-manager-panel-content';
+        _thisPanel.content = document.createElement('div');
+
+        _thisPanel.content.id = baseId + 'PanelContentId';
+        _thisPanel.content.className = 'extension-manager-panel-content';
 
         Autodesk.Viewing.UI.DockingPanel.call(
-          this,
+          _thisPanel,
           parentContainer,
           baseId,
           "Extensions Manager",
@@ -289,18 +290,18 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
         var w = viewer.container.clientWidth;
         var h = viewer.container.clientHeight;
 
-        this.container.style.top = "10px";
-        this.container.style.left = "10px";
+        _thisPanel.container.style.top = "0px";
+        _thisPanel.container.style.right = "0px";
 
-        this.container.style.width = Math.min(w * 75/100, 280) + 'px',
-        this.container.style.height = Math.min(h * 75/100, 400) + 'px',
+        _thisPanel.container.style.width = Math.min(w * 75/100, 280) + 'px',
+        _thisPanel.container.style.height = Math.min(h * 75/100, 400) + 'px',
 
-        this.container.style.resize = "auto";
+        _thisPanel.container.style.resize = "auto";
 
         var html = [
             '<div class="extension-manager-panel-container" style="z-index: 1000">',
-                '<input id="' + baseId +'-filter" type="text" class="form-control extension-manager-search row" placeholder="Search Extensions ...">',
-                '<ul id="' + baseId + 'PanelContainerId" class="list-group extension-manager-panel-list-container">',
+                '<input id="' + baseId +'-filter" type="text" class="form-control extension-search row" placeholder="Search Extensions ...">',
+                '<ul id="' + baseId + 'PanelContainerId" class="list-group extension-list">',
                 '</ul>',
             '</div>'
         ].join('\n');
@@ -312,23 +313,19 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
             filterItems();
         });
 
-        this.addExtension = function(extension) {
+        _thisPanel.addExtension = function(extension) {
 
             var srcUrl = options.extensionsSourceUrl + '/' + extension.id + '/' + extension.file;
 
             var html = [
 
                 '<li class="extension-manager-panel-row">',
-                    '<a class="list-group-item extension-manager-panel-list-group-item col-md-6" id=' + extension.itemId + '>',
-                        '<p class="list-group-item-text">',
-                            extension.name,
-                        '</p>',
+                    '<a class="list-group-item list-group-item-text extension-item col-md-6 col-sm-2 col-xs-2" id=' + extension.itemId + '>',
+                        extension.name,
                     '</a>',
 
-                    '<a href="' + srcUrl + '" class="list-group-item extension-manager-panel-list-group-item-src col-md-2" target=_blank>',
-                        '<p class="list-group-item-text">',
-                            'Source',
-                        '</p>',
+                    '<a href="' + srcUrl + '" class="list-group-item list-group-item-text extension-item-src col-md-2 col-sm-2 col-xs-2" target=_blank>',
+                        'Source',
                     '</a>',
                 '</li>',
 
@@ -347,7 +344,7 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
         //
         //
         /////////////////////////////////////////////
-        this.clearExtensions = function () {
+        _thisPanel.clearExtensions = function () {
 
             $('#' + baseId + 'PanelContainerId > div').each(
               function (idx, child) {
@@ -356,25 +353,48 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
             );
         }
 
+        /////////////////////////////////////////////////////////////
+        // setVisible override
+        //
+        /////////////////////////////////////////////////////////////
+        _thisPanel.isVisible = false;
+
+        _thisPanel.setVisible = function(show) {
+
+            _thisPanel.isVisible = show;
+
+            Autodesk.Viewing.UI.DockingPanel.prototype.
+              setVisible.call(this, show);
+        }
+    
+        /////////////////////////////////////////////////////////////
+        //
+        //
+        /////////////////////////////////////////////////////////////
+        _thisPanel.toggleVisibility = function() {
+        
+            _panel.setVisible(!_thisPanel.isVisible);
+        }
+
         /////////////////////////////////////////////
         // onTitleDoubleClick override
         //
         /////////////////////////////////////////////
         var _isMinimized = false;
 
-        this.onTitleDoubleClick = function (event) {
+        _thisPanel.onTitleDoubleClick = function (event) {
 
             _isMinimized = !_isMinimized;
 
             if(_isMinimized) {
 
-                $(this.container).css({
+                $(_thisPanel.container).css({
                     'height': '34px',
                     'min-height': '34px'
                 });
             }
             else {
-                $(this.container).css({
+                $(_thisPanel.container).css({
                     'height': '200px',
                     'min-height': Math.min(
                       viewer.container.clientHeight * 75/100, 400) + 'px'
@@ -447,16 +467,16 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
             'margin: 10px;',
         '}',
 
-        'div.extension-manager-panel-controls-container {',
+        'div.extension-controls {',
             'margin-bottom: 10px;',
         '}',
 
-        'ul.extension-manager-panel-list-container {',
+        'ul.extension-list {',
             'height: calc(100% - 35px);',
             'overflow-y: auto;',
         '}',
 
-        'a.extension-manager-panel-list-group-item {',
+        'a.extension-item {',
             'color: #FFFFFF;',
             'background-color: #3F4244;',
             'margin-bottom: 5px;',
@@ -464,7 +484,7 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
             'width: calc(100% - 115px);',
         '}',
 
-        'a.extension-manager-panel-list-group-item-src {',
+        'a.extension-item-src {',
             'color: #FFFFFF;',
             'background-color: #3F4244;',
             'margin-bottom: 5px;',
@@ -473,12 +493,12 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
             'border-radius: 4px;',
         '}',
 
-        'a.extension-manager-panel-list-group-item:hover {',
+        'a.extension-item:hover {',
             'color: #FFFFFF;',
             'background-color: #5BC0DE;',
         '}',
 
-        'a.extension-manager-panel-list-group-item.enabled {',
+        'a.extension-item.enabled {',
             'color: #000000;',
             'background-color: #00CC00;',
         '}',
@@ -487,7 +507,7 @@ Autodesk.ADN.Viewing.Extension.ExtensionManager = function (viewer, options) {
             'height: 45px;',
         '}',
 
-        'input.extension-manager-search {',
+        'input.extension-search {',
             'height: 25px;',
             'margin-left: 1px;',
             'margin-bottom: 10px;',

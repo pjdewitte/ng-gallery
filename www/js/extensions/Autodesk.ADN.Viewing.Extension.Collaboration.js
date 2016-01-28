@@ -88,9 +88,6 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     createControls(ctrlGroup);
 
-    _this.panel = new Autodesk.ADN.Viewing.Extension.Collaboration.Panel(
-      options.container);
-
     if (options.meetingId.length) {
 
       _this.splash = new Autodesk.ADN.Viewing.Extension.Collaboration.JoinSplashPanel(
@@ -209,7 +206,7 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     var d = new Date().getTime();
 
-    var guid = 'xxxx-xxxx-xxxx-xxxx-xxxx'.replace(
+    var guid = 'xxxx-xxxx-xxxx'.replace(
       /[xy]/g,
       function (c) {
         var r = (d + Math.random() * 16) % 16 | 0;
@@ -888,6 +885,13 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       }
     });
 
+    var url = location.protocol + '//' +
+      location.host + options.host  + '/collaboration' +
+      '?meetingId=' + _this.meetingId;
+
+    var _invitePanel = new Autodesk.ADN.Viewing.Extension.Collaboration.InviteSplashPanel(
+      options.container, url);
+
     /////////////////////////////////////////////
     //
     //
@@ -919,10 +923,6 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     /////////////////////////////////////////////
     _thisPanel.addInviteButton = function() {
 
-      var url = location.protocol + '//' +
-        location.host + options.host  + '/collaboration' +
-        '?meetingId=' + _this.meetingId;
-
       var id = guid();
 
       var html = [
@@ -937,12 +937,9 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
       usersPanel.append(html);
 
-      _thisPanel.invitePanel = new Autodesk.ADN.Viewing.Extension.Collaboration.InviteSplashPanel(
-        options.container, url);
-
       $('#' + id).click(function(){
 
-        _thisPanel.invitePanel.setVisible(true);
+        _invitePanel.setVisible(true);
       });
     }
 
@@ -1065,18 +1062,15 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       {shadow: true});
 
     var w = 300;
-    var h = 150;
+    var h = 155;
 
-    var cw = $(options.container).width();
-    var ch = $(options.container).height();
-
-    this.container.style.left = 0.5 * (cw - w) + 'px';
-    this.container.style.top =  0.5 * (ch - h) + 'px';
-
-    this.container.style.width = w + 'px';
-    this.container.style.height = h + 'px';
-
-    this.container.style.resize = "none";
+    $(this.container).css({
+      'left'  : 'calc(50vw - ' + w * 0.5 + 'px)',
+      'top'   : 'calc(50vh - ' + h * 0.5 + 'px)',
+      'width' : w + 'px',
+      'height': h + 'px',
+      'resize': 'none'
+    });
 
     var userId = guid();
 
@@ -1115,9 +1109,12 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
         _this.splash.setVisible(false);
 
-        _this.panel.setVisible(true);
-
         createMeeting(meetingId, username);
+
+        _this.panel = new Autodesk.ADN.Viewing.Extension.Collaboration.Panel(
+          options.container);
+
+        _this.panel.setVisible(true);
       }
     });
   };
@@ -1185,21 +1182,17 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       ].join('\n');
     }
 
-    var cw = $(options.container).width();
-    var ch = $(options.container).height();
-
-    this.container.style.left = 0.5 * (cw - w) + 'px';
-    this.container.style.top =  0.5 * (ch - h) + 'px';
-
-    this.container.style.width = w + 'px';
-    this.container.style.height = h + 'px';
-
-    this.container.style.resize = "none";
+    $(this.container).css({
+      'left'  : 'calc(50vw - ' + w * 0.5 + 'px)',
+      'top'   : 'calc(50vh - ' + h * 0.5 + 'px)',
+      'width' : w + 'px',
+      'height': h + 'px',
+      'resize': 'none'
+    });
 
     var userId = guid();
 
     var startBtnId = guid();
-
 
     var html = [
       '<div>',
@@ -1227,6 +1220,9 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
         _this.splash.setVisible(false);
 
+        _this.panel = new Autodesk.ADN.Viewing.Extension.Collaboration.Panel(
+          options.container);
+
         _this.panel.setVisible(true);
 
         joinMeeting(options.meetingId, username, false);
@@ -1243,6 +1239,9 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
           location.hostname + ':' + options.port);
 
         _this.splash.setVisible(false);
+
+        _this.panel = new Autodesk.ADN.Viewing.Extension.Collaboration.Panel(
+          options.container);
 
         joinMeeting(options.meetingId, username, true);
 
@@ -1274,7 +1273,6 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       this.initializeCloseHandler(this.closer);
     };
 
-
   /////////////////////////////////////////////
   //
   //
@@ -1299,34 +1297,33 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       {shadow: true});
 
     var w = 300;
-    var h = 335;
-
-    var cw = $(options.container).width();
-    var ch = $(options.container).height();
-
-    this.container.style.left = 0.5 * (cw - w) + 'px';
-    this.container.style.top =  0.5 * (ch - h) + 'px';
-
-    this.container.style.width = w + 'px';
-    this.container.style.height = h + 'px';
-
-    this.container.style.resize = "none";
+    var h = 338;
 
     $(this.container).css({
-      'background-color':'whitesmoke'
+      'left'  : 'calc(50vw - ' + w * 0.5 + 'px)',
+      'top'   : 'calc(50vh - ' + h * 0.5 + 'px)',
+      'background-color':'whitesmoke',
+      'width' : w + 'px',
+      'height': h + 'px',
+      'resize': 'none'
     });
 
     var linkId = guid();
 
     var html = [
       '<div>',
+
       '<hr class="collaboration-spacer">',
       '<input class="collaboration-panel-input-info" type="text" readonly id="' + linkId + '">',
+
       '<hr class="collaboration-spacer">',
       '<hr class="collaboration-spacer">',
-      '<div style="margin-left:22px" id="qr-code">',
+
+      '<div style="margin-left:22px" id="qr-container">',
         '<img id="qr-img" src="img/adsk/adsk-256x256-32.png" height="256" width="256"/>',
+        '<div id="qr-code" style="display: none;"></div>',
       '</div>',
+
       '</div>'
 
     ].join('\n');
@@ -1334,6 +1331,12 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
     $('#' + panelId).html(html);
 
     $('#' + linkId).val(url);
+
+    $('#qr-code').qrcode({
+      "color": "#3a3",
+      "size": 250,
+      "text": url
+    });
 
     /////////////////////////////////////////////////////////////
     // setVisible override (not used in that sample)
@@ -1344,24 +1347,29 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       Autodesk.Viewing.UI.DockingPanel.prototype.
         setVisible.call(this, show);
 
-      if(show & !_thisPanel.qrCode) {
+      if (show) {
 
-        setTimeout(function() {
+        setTimeout(function(){
 
           $('#qr-img').css({
             'display':'none'
           });
 
-          _thisPanel.qrCode = new QRCode(document.getElementById('qr-code'), {
-            text: url,
-            width: 256,
-            height: 256,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
+          $('#qr-code').css({
+            'display':'block'
           });
 
-        }, 1500);
+        }, 800);
+      }
+      else {
+
+        $('#qr-img').css({
+          'display':'block'
+        });
+
+        $('#qr-code').css({
+          'display':'none'
+        });
       }
     }
   };
@@ -1392,8 +1400,8 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
   var css = [
 
     'button.btn-collaboration {',
-      'width: 90%;',
-      'margin-left: 5%;',
+      'width: calc(100% - 45px);',
+      'margin-left: 10px;',
     '}',
 
     'div.collaboration-meetingId {',
@@ -1403,17 +1411,17 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
 
     'div.collaboration-user-odd {',
       'background-color: rgb(142, 157, 255);',
-      'width: calc(100% - 8px);',
+      'width: calc(100% - 10px);',
       'border-radius: 5px;',
-      'margin-left: 2px;',
+      'margin-left: 4px;',
       'margin-top: 2px;',
     '}',
 
     'div.collaboration-user-even {',
       'background-color: rgb(200, 255, 209);',
-      'width: calc(100% - 8px);',
+      'width: calc(100% - 10px);',
       'border-radius: 5px;',
-      'margin-left: 2px;',
+      'margin-left: 4px;',
       'margin-top: 2.5px;',
     '}',
 
@@ -1494,13 +1502,13 @@ Autodesk.ADN.Viewing.Extension.Collaboration = function (viewer, options) {
       'height: 22px;',
       'border-radius: 5px;',
       'background-color: rgb(200, 200, 200);',
-      'width: 90%;',
-      'margin-left: 5%;',
+      'width: calc(100% - 25px);',
+      'margin-left: 10px;',
     '}',
 
     'button.collaboration-invite-btn{',
-      'width: calc(100% - 8px);',
-      'height: 34px;',
+      'width: calc(100% - 35px);',
+      'height: 20px;',
       'margin-top: 5px;',
       'margin-left: 4px;',
     '}',

@@ -113,7 +113,7 @@ Autodesk.ADN.Viewing.Extension.VR = function (viewer, options) {
       'Switch to VR Mode?',
       {shadow:true});
 
-    $(_thisPanel.container).addClass('vr-selector');
+    $(_thisPanel.container).addClass('vr-fullscreen-selector');
 
     var w = 270;
     var h = 115;
@@ -133,9 +133,9 @@ Autodesk.ADN.Viewing.Extension.VR = function (viewer, options) {
     /////////////////////////////////////////////////////////////
     var html = [
 
-      '<form class="form-inline vr-selector-controls" role="form">',
+      '<form class="form-inline vr-fullscreen-selector-controls" role="form">',
 
-        '<button class="btn btn-success btn-vr-selector" id="' + id + '-ok-btn">',
+        '<button class="btn btn-success btn-vr-fullscreen-selector" id="' + id + '-ok-btn">',
           '<span class="glyphicon glyphicon-fullscreen" aria-hidden="true"> ',
           '</span> ',
           'OK',
@@ -143,7 +143,7 @@ Autodesk.ADN.Viewing.Extension.VR = function (viewer, options) {
 
         '&nbsp;',
 
-        '<button class="btn btn-danger btn-vr-selector" id="' + id + '-cancel-btn">',
+        '<button class="btn btn-danger btn-vr-fullscreen-selector" id="' + id + '-cancel-btn">',
           '<span class="glyphicon glyphicon-remove" aria-hidden="true"> ',
           '</span> ',
           'Cancel',
@@ -216,11 +216,11 @@ Autodesk.ADN.Viewing.Extension.VR = function (viewer, options) {
   /////////////////////////////////////////////////////////////
   var css = [
 
-    'form.vr-selector-controls{',
+    'form.vr-fullscreen-selector-controls{',
       'margin: 20px;',
     '}',
 
-    'input.vr-selector-name {',
+    'input.vr-fullscreen-selector-name {',
       'height: 30px;',
       'margin-left: 5px;',
       'margin-bottom: 5px;',
@@ -228,7 +228,7 @@ Autodesk.ADN.Viewing.Extension.VR = function (viewer, options) {
       'border-radius:5px;',
     '}',
 
-    'div.vr-selector {',
+    'div.vr-fullscreen-selector {',
       'top: 0px;',
       'left: 0px;',
       'width: 270px;',
@@ -236,12 +236,12 @@ Autodesk.ADN.Viewing.Extension.VR = function (viewer, options) {
       'resize: none;',
     '}',
 
-    'div.vr-selector-minimized {',
+    'div.vr-fullscreen-selector-minimized {',
       'height: 34px;',
       'min-height: 34px',
     '}',
 
-    'button.btn-vr-selector {',
+    'button.btn-vr-fullscreen-selector {',
       'width: 80px',
     '}'
 

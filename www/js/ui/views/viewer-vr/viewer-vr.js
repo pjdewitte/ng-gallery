@@ -32,6 +32,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-VR',
   [
     'Autodesk.ADN.NgGallery.Service.Resource.Model',
     'Autodesk.ADN.NgGallery.Service.Toolkit',
+    'Autodesk.ADN.Toolkit.Directive.Viewer'
   ])
 
   ///////////////////////////////////////////////////////////////////////
@@ -68,12 +69,18 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-VR',
         xhr.open("GET", configClient.ApiURL + '/token', false);
         xhr.send(null);
 
+        if(xhr.status != 200) {
+
+          console.log('xrh error: ');
+          console.log(xhr.statusText + ':' + xhr.status);
+          return '';
+        }
+
         var response = JSON.parse(
           xhr.responseText);
 
         return response.access_token;
       }
-
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -152,7 +159,9 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-VR',
                     Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
                     onGeometryLoaded);
 
-                  viewer.load(viewablePath[0].path);
+                  viewer.loadModel(viewablePath[0].path);
+
+                  $scope.viewer = viewer;
                 }
                 else {
                   console.log('Error: No Viewable Path...');
@@ -183,15 +192,28 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer-VR',
         });
       }
 
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$on('$destroy', function () {
+
+        if($scope.viewer) {
+
+          $scope.viewer.finish();
+          $scope.viewer = null;
+        }
+      });
+
       ///////////////////////////////////////////////////////////////////////
       //
       //
       ///////////////////////////////////////////////////////////////////////
       function initialize() {
 
-        AppState.activeView = 'viewer';
-
         AppState.showNavbar = false;
+
+        $scope.viewer = null;
 
         var id = Autodesk.Viewing.Private.getParameterByName("id");
 

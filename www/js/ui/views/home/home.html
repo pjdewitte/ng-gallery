@@ -1,227 +1,247 @@
 
 <div id="gallery-home" style="background-color: rgb(238, 238, 238);">
 
-    <!-- Banner================================================== -->
+  <!-- Banner================================================== -->
 
-    <div class="clearfix">
-        <div class="row">
-            <div class="col-lg-12">
+  <!--<div class="clearfix">-->
+    <!--<div class="row">-->
+      <!--<div class="col-lg-12">-->
 
-                <div class="page-header content-header app-content-header api-detail-header view-and-data-api">
-                    <div class="container app-container">
-                        <div class="col-xs-12 col-sm-6 col-md-9 col-lg-9 app-title-container">
-                            <h1 id="view-and-data-title">View & Data Gallery</h1>
+        <!--<div class="page-header content-header app-content-header api-detail-header view-and-data-api">-->
+          <!--<div class="container app-container">-->
+            <!--<div class="col-xs-12 col-sm-6 col-md-9 col-lg-9 app-title-container">-->
+              <!--<h1 id="view-and-data-title">View & Data Gallery</h1>-->
+            <!--</div>-->
+
+          <!--</div>-->
+        <!--</div>-->
+
+      <!--</div>-->
+    <!--</div>-->
+  <!--</div>-->
+
+  <div class="clearfix">
+    <div class="row fullscreen-scroller">
+      <div class="col-lg-12 animation-container">
+        <div class="output">
+          <script src="lib/banner/background-animation.js"></script>
+        </div>
+
+        <div class="page-header content-header app-content-header api-detail-header view-and-data-api">
+          <div class="container app-container">
+            <div class="col-xs-12 col-sm-6 col-md-9 col-lg-9 app-title-container">
+              <h1 id="view-and-data-title">View & Data Gallery</h1>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Content================================================== -->
+
+  <div class="content-form app-content-form clearfix">
+    <div class="container app-container">
+      <div class="row">
+
+        <div class="col-xs-12 col-sm-4 col-md-3 col-lg-3">
+          <div id="nav-parent" class="page-header hidden-xs">
+            <div data-spy="affix" data-offset-top="200" class="panel panel-default app-panel-default app-sidenav-panel">
+              <div class="navbar-collapse collapse navbar-responsive-collapse panel-body app-panel-body app-sidenav-body" role="complementary">
+                <div class="col-lg-12">
+                  <ul class="nav nav-pills nav-stacked app-sidenav">
+                    <li role="presentation" class="active">
+                      <a href="#home" class="first-child">
+                        Home
+                      </a>
+                    </li>
+                    <li role="presentation">
+                      <a href="#viewer" class="first-child">
+                        Viewer
+                      </a>
+                    </li>
+                    <li role="presentation">
+                      <a href="#upload" class="first-child">
+                        Upload
+                      </a>
+                    </li>
+                    <li role="presentation">
+                      <a href="#extensions" class="first-child">
+                        Extensions
+                      </a>
+                    </li>
+                    <li role="presentation">
+                      <a href="#extension-editor" class="first-child">
+                        Extension Editor
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="nav-parent-mobile" class="page-header hidden-sm hidden-md hidden-lg">
+            <div data-spy="affix" data-offset-top="150" class="panel panel-default app-panel-default app-sidenav-panel">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <div class="navbar-collapse collapse navbar-responsive-collapse panel-body app-panel-body app-sidenav-body" role="complementary">
+                <div class="col-lg-12">
+                  <ul class="nav nav-pills nav-stacked app-sidenav">
+                    <li role="presentation" class="active">
+                      <a href="#home" class="first-child" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+                        Home
+                      </a>
+                    </li>
+                    <li role="presentation">
+                      <a href="#viewer" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+                        Viewer
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="col-xs-12 col-sm-8 col-md-9 col-lg-9">
+          <div class="page-header">
+            <div class="panel panel-default app-panel-default" style="padding: 0">
+              <div class="app-api-doc app-panel-body panel-body" style="padding: 0">
+
+                <!--=================== Search Group ===================-->
+                <div class="input-group" style="width:100%; border: 3px solid #E1E1E1;">
+                  <input id="input-home-search"
+                         type="text"
+                         class="form-control"
+                         placeholder="Search Models ..."
+                         aria-describedby="basic-addon1"
+                         ng-model="modelsFilterValue">
+                </div>
+
+                <!--=================== Model List ===================-->
+                <ul id="model-list" class="col-lg-12 fly-simplified stroll" style="overflow: auto; height:600px; margin:0;">
+
+                  <li class="model-item" ng-repeat="model in models" style="list-style-type: none; margin:0;">
+
+                    <div class="row" style="{{['background-color:rgba(124, 183, 155, 0.42);padding: 5px', 'background-color:rgba(66, 151, 111, 0.69);padding: 5px'][$index %2]}}">
+                      <div class="col-md-3" style="margin-top: 5px; margin-bottom: 5px;">
+                        <img class="img-responsive img-home"
+                             ng-src={{model.thumbnail}}
+                             width="180"
+                             height="180">
+                      </div>
+                      <div class="col-md-9 model-info">
+
+                        <h3 style="margin-top: 10px;">{{model.name}}</h3>
+                        <h5><b>Type: </b>{{model.type}}</h5>
+                        <h5><b>Translation: </b>{{model.progress}}</h5>
+
+                        <div class="row">
+
+                          <div ng-if="model.viewablePath"
+                               class="col-lg-3 col-md-3 col-sm-12 col-xs-12 btn-container-gallery-home">
+                            <a class="btn btn-gallery-home" href="#/viewer-local?id={{model._id}}">
+                              <span class="glyphicon glyphicon-flash"></span>
+                              Load Local
+                            </a>
+                            <hr style="border:0; margin:8px;">
+                          </div>
+
+                          <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12 btn-container-gallery-home">
+                            <a id="btn-load-{{model._id}}" class="btn btn-gallery-home"
+                               href="#/viewer?id={{model._id}}">
+                              <span class="glyphicon glyphicon-eye-open"></span>
+                              Load
+                            </a>
+                            <hr style="border:0; margin:8px;">
+                          </div>
+
+                          <div ng-if="AppState.mobile"
+                               class="col-lg-3 col-md-3 col-sm-12 col-xs-12 btn-container-gallery-home">
+                            <a class="btn btn-gallery-home" href="#/viewer-vr?id={{model._id}}">
+                              <span class="glyphicon glyphicon-phone"></span>
+                              VR Mode
+                            </a>
+                            <hr style="border:0; margin:8px;">
+                          </div>
+
+                          <div ng-if="model.viewablePath"
+                               class="col-lg-3 col-md-3 col-sm-12 col-xs-12 btn-container-gallery-home">
+                            <a class="btn btn-gallery-home" href="" ng-click="drop(model)">
+                              <span class="glyphicon glyphicon-remove-circle"></span>
+                              Drop Local
+                            </a>
+                            <hr style="border:0; margin:8px;">
+                          </div>
+
+                          <div ng-if="!model.viewablePath && model.downloadable"
+                               class="col-lg-3 col-md-3 col-sm-12 col-xs-12 btn-container-gallery-home">
+                            <a href=""
+                               class="btn btn-gallery-home"
+                               ng-click="download(model)"
+                               ng-disabled="model.downloading">
+                              <span class="glyphicon glyphicon-cloud-download"></span>
+                              Download
+                            </a>
+                            <hr style="border:0; margin:8px;">
+                          </div>
+
+                          <div ng-if="model.allowDelete"
+                               class="col-lg-3 col-md-3 col-sm-12 col-xs-12 btn-container-gallery-home">
+                            <a class="btn btn-gallery-home" href="" ng-click="delete(model)">
+                              <span class="glyphicon glyphicon-remove"></span>
+                              Delete
+                            </a>
+                            <hr style="border:0; margin:8px;">
+                          </div>
                         </div>
-
+                      </div>
                     </div>
-                </div>
+                  </li>
+                </ul>
 
+                <!-- Bottom Back to top Mobile================================================== -->
+                <div class="bs-docs-section clearfix">
+                  <div class="row">
+                    <div class="col-xs-12">
+                      <div class="col-xs-6 col-sm-6 app-button-container mob-app-button-container back-to-top-container">
+                        <p class="bs-component">
+                          <a href="#view-and-data-title" class="btn app-btn app-btn-lg app-btn-default back-to-top-btn">Back to top</a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
+
+      </div>
     </div>
+  </div>
 
-    <!-- Content================================================== -->
+  <!-- Footer================================================== -->
 
-    <div class="content-form app-content-form clearfix">
-        <div class="container app-container">
-            <div class="row">
-
-                <div class="col-xs-12 col-sm-4 col-md-3 col-lg-3">
-                    <div id="nav-parent" class="page-header hidden-xs">
-                            <div data-spy="affix" data-offset-top="200" class="panel panel-default app-panel-default app-sidenav-panel">
-                                <div class="navbar-collapse collapse navbar-responsive-collapse panel-body app-panel-body app-sidenav-body" role="complementary">
-                                    <div class="col-lg-12">
-                                        <ul class="nav nav-pills nav-stacked app-sidenav">
-                                            <li role="presentation" class="active">
-                                                <a href="#home" class="first-child">
-                                                    Home
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#viewer" class="first-child">
-                                                    Viewer
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#upload" class="first-child">
-                                                    Upload
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#extensions" class="first-child">
-                                                    Extensions
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#extension-editor" class="first-child">
-                                                    Extension Editor
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-
-                    <div id="nav-parent-mobile" class="page-header hidden-sm hidden-md hidden-lg">
-                            <div data-spy="affix" data-offset-top="150" class="panel panel-default app-panel-default app-sidenav-panel">
-                                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-                                    <span class="icon-bar"></span>
-                                    <span class="icon-bar"></span>
-                                    <span class="icon-bar"></span>
-                                </button>
-                                <div class="navbar-collapse collapse navbar-responsive-collapse panel-body app-panel-body app-sidenav-body" role="complementary">
-                                    <div class="col-lg-12">
-                                        <ul class="nav nav-pills nav-stacked app-sidenav">
-                                            <li role="presentation" class="active">
-                                                <a href="#home" class="first-child" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-                                                    Home
-                                                </a>
-                                            </li>
-                                            <li role="presentation">
-                                                <a href="#viewer" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-                                                    Viewer
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-
-
-                <div class="col-xs-12 col-sm-8 col-md-9 col-lg-9">
-                    <div class="page-header">
-                        <div class="panel panel-default app-panel-default" style="padding: 0">
-                            <div class="app-api-doc app-panel-body panel-body" style="padding: 0">
-
-                                <!--=================== Search Group ===================-->
-                                <div class="input-group" style="width:100%; border: 3px solid #E1E1E1;">
-                                    <input type="text"
-                                           class="form-control"
-                                           placeholder="Search Models ..."
-                                           aria-describedby="basic-addon1"
-                                           ng-model="modelsFilterValue">
-                                </div>
-
-                                <!--=================== Model List ===================-->
-                                <ul id="model-list" class="col-lg-12 fly-simplified stroll" style="overflow: auto; height:600px; margin:0;">
-
-                                     <li class="model-item" ng-repeat="model in models" style="list-style-type: none; margin:0;">
-
-                                         <div class="row" style="{{['background-color:#FFFFFF;padding: 10px', 'background-color:rgba(162, 201, 134, 0.41);padding: 10px'][$index %2]}}">
-                                             <div class="col-md-3" style="margin-top: 15px; margin-bottom: 15px;">
-                                                 <img class="img-responsive"
-                                                      ng-src={{model.thumbnail}}
-                                                      width="128"
-                                                      height="128"
-                                                      style="border: 1px solid; border-radius: 15px;">
-                                             </div>
-                                             <div class="col-md-9">
-
-                                                 <h3 style="margin-top: 10px;">{{model.name}}</h3>
-                                                 <h5><b>Type: </b>{{model.type}}</h5>
-                                                 <h5><b>Translation: </b>{{model.progress}}</h5>
-
-                                                 <div class="row">
-
-                                                     <div ng-if="model.viewablePath"
-                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-                                                         <a class="btn btn-success btn-gallery-home" href="#/viewer-local?id={{model._id}}">
-                                                             <span class="glyphicon glyphicon-flash"></span>
-                                                             Load from Local
-                                                         </a>
-                                                         <hr style="border:0; margin:8px;">
-                                                     </div>
-
-                                                     <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-                                                         <a class="btn btn-primary btn-gallery-home" href="#/viewer?id={{model._id}}">
-                                                             <span class="glyphicon glyphicon-eye-open"></span>
-                                                             Show in Viewer
-                                                         </a>
-                                                         <hr style="border:0; margin:8px;">
-                                                     </div>
-
-                                                     <div ng-if="AppState.mobile"
-                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-                                                         <a class="btn btn-success btn-gallery-home" href="#/viewer-vr?id={{model._id}}">
-                                                             <span class="glyphicon glyphicon-phone"></span>
-                                                             VR Mode <br> (experimental)
-                                                         </a>
-                                                         <hr style="border:0; margin:8px;">
-                                                     </div>
-
-                                                     <div ng-if="model.viewablePath"
-                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-                                                         <a class="btn btn-warning btn-gallery-home" href="" ng-click="drop(model._id)">
-                                                             <span class="glyphicon glyphicon-remove-circle"></span>
-                                                             Drop Local
-                                                         </a>
-                                                         <hr style="border:0; margin:8px;">
-                                                     </div>
-
-                                                     <div ng-if="!model.viewablePath && model.downloadable"
-                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-                                                         <a href=""
-                                                            class="btn btn-info btn-gallery-home"
-                                                            ng-click="download(model._id)"
-                                                            ng-disabled="model.downloading">
-                                                             <span class="glyphicon glyphicon-cloud-download"></span>
-                                                             Download
-                                                         </a>
-                                                         <hr style="border:0; margin:8px;">
-                                                     </div>
-
-                                                     <div ng-if="model.allowDelete"
-                                                          class="col-lg-3 col-md-3 col-sm-12 col-xs-12">
-                                                         <a class="btn btn-danger btn-gallery-home" href="" ng-click="delete(model)">
-                                                             <span class="glyphicon glyphicon-remove"></span>
-                                                             Delete
-                                                         </a>
-                                                         <hr style="border:0; margin:8px;">
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                         </div>
-                                     </li>
-                                 </ul>
-
-                                <!-- Bottom Back to top Mobile================================================== -->
-                                <div class="bs-docs-section clearfix">
-                                    <div class="row">
-                                        <div class="col-xs-12">
-                                            <div class="col-xs-6 col-sm-6 app-button-container mob-app-button-container back-to-top-container">
-                                                <p class="bs-component">
-                                                    <a href="#view-and-data-title" class="btn app-btn app-btn-lg app-btn-default back-to-top-btn">Back to top</a>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+  <div class="clearfix">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="page-footer">
+          <div class="container app-container">
+            <p><a href="http://www.autodesk.com/company/legal-notices-trademarks/privacy-statement">Privacy</a>  |  <a href="http://www.autodesk.com/company/legal-notices-trademarks">Legal Notices & Trademarks</a>  |  <a href="http://www.autodesk.com/company/license-compliance/report-noncompliance">Report Noncompliance</a>
+              <br>&#169; Copyright 2015 Autodesk. All rights reserved. </p>
+          </div>
         </div>
+
+      </div>
     </div>
-
-    <!-- Footer================================================== -->
-
-    <div class="clearfix">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="page-footer">
-                    <div class="container app-container">
-                        <p><a href="http://www.autodesk.com/company/legal-notices-trademarks/privacy-statement">Privacy</a>  |  <a href="http://www.autodesk.com/company/legal-notices-trademarks">Legal Notices & Trademarks</a>  |  <a href="http://www.autodesk.com/company/license-compliance/report-noncompliance">Report Noncompliance</a>
-                        <br>&#169; Copyright 2015 Autodesk. All rights reserved. </p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
+  </div>
 
 </div>

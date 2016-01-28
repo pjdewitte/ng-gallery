@@ -6,6 +6,7 @@ var vinylPaths = require('vinyl-paths');
 
 //Gulp modules
 var gulp = require("gulp");
+var gutil = require('gulp-util');
 var bower = require('gulp-bower');
 var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglify');
@@ -93,7 +94,7 @@ gulp.task('compress', ['webpack:build-prod'], function() {
 
   return gulp.src(config.buildDir + '/*.js')
     .pipe(ngAnnotate())
-    .pipe(uglify({mangle: false}))
+    .pipe(uglify({mangle: false})).on('error', gutil.log)
     .pipe(gulp.dest(config.buildDir));
 });
 

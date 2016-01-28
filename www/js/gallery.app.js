@@ -45,8 +45,9 @@ require("./services/extension-service");
 require("./services/thumbnail-service");
 require("./services/appState-service");
 require("./services/toolkit-service");
-require("./services/model-service");
+require("./services/channel-service");
 require("./services/upload-service");
+require("./services/model-service");
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -102,8 +103,6 @@ angular.module('Autodesk.ADN.NgGallery.App',
     'ui-layout-events',
     'ngMdIcons',
     'ngResource',
-    'ui.bootstrap',
-    'mgcrea.ngStrap',
 
     // Views
     'Autodesk.ADN.NgGallery.View.Home',
@@ -129,6 +128,7 @@ angular.module('Autodesk.ADN.NgGallery.App',
 
     //Services
     'Autodesk.ADN.NgGallery.Service.Upload',
+    'Autodesk.ADN.NgGallery.Service.Channel',
     'Autodesk.ADN.NgGallery.Service.Toolkit',
     'Autodesk.ADN.NgGallery.Service.AppState',
     'Autodesk.ADN.NgGallery.Service.Resource.Model',
@@ -143,9 +143,9 @@ angular.module('Autodesk.ADN.NgGallery.App',
   ///////////////////////////////////////////////////////////////////////////
   .config(
   ['$routeProvider',
-   '$locationProvider',
-   '$httpProvider',
-   'ViewAndDataProvider',
+    '$locationProvider',
+    '$httpProvider',
+    'ViewAndDataProvider',
     function ($routeProvider,
               $locationProvider,
               $httpProvider,
@@ -164,17 +164,20 @@ angular.module('Autodesk.ADN.NgGallery.App',
   //
   ///////////////////////////////////////////////////////////////////////////
   .controller('Autodesk.ADN.NgGallery.App.Controller',
-  ['$scope', '$http', 'AppState', 'Toolkit', function($scope, $http, AppState, Toolkit) {
+  ['$scope', '$http', 'AppState', 'Toolkit', 'Channel',
+    function($scope, $http, AppState, Toolkit, Channel) {
 
-    $scope.AppState = AppState;
+      $scope.AppState = AppState;
 
-    AppState.mobile = Toolkit.mobile().isAny();
+      AppState.mobile = Toolkit.mobile().isAny();
 
-    requirejs.config({
-      waitSeconds: 0
-    });
+      requirejs.config({
+        waitSeconds: 0
+      });
 
-    $http.get(configClient.ApiURL + '/auth/isAuthenticated').
+      Channel.addChannel('extensions.connect');
+
+      $http.get(configClient.ApiURL + '/auth/isAuthenticated').
 
       success(function (user){
 
@@ -186,11 +189,11 @@ angular.module('Autodesk.ADN.NgGallery.App',
         AppState.isAuthenticated = false;
       });
 
-    $scope.$on('app.EmitMessage', function (event, data) {
+      $scope.$on('app.EmitMessage', function (event, data) {
 
-      $scope.$broadcast(data.msgId, data.msgArgs);
-    });
+        $scope.$broadcast(data.msgId, data.msgArgs);
+      });
 
-  }]);
+    }]);
 
 

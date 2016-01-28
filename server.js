@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // Copyright (c) Autodesk, Inc. All rights reserved
 // Written by Philippe Leefsma 2015 - ADN/Developer Technical Services
 //
@@ -14,9 +14,8 @@
 // MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC.
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
-/////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 var collaboration = require('./routes/collaboration');
-var credentials = require('./config/credentials');
 var dbConnector = require('./routes/dbConnector');
 var config = require('./config/config-server');
 var cookieParser = require('cookie-parser');
@@ -56,6 +55,9 @@ app.use(config.host + '/embed', express.static(
 
 app.use(config.host + '/collaboration', express.static(
   __dirname + '/www/js/apps/collaboration/collaboration.html'));
+
+app.use(config.host + '/gl', express.static(
+  __dirname + '/www/js/apps/gl'));
 
 function onError(error) {
   console.log(error);

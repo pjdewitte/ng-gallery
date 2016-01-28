@@ -23,7 +23,7 @@ require("../../directives/spinning-img-directive");
 require("../../extensions/Autodesk.ADN.Viewing.Extension.VR");
 require("../../extensions/Autodesk.ADN.Viewing.Extension.StateManager");
 require("../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
-require("../../extensions/Autodesk.ADN.Viewing.Extension.ControlSelector");
+require("../../../uploads/extensions/Autodesk.ADN.Viewing.Extension.ControlSelector/Autodesk.ADN.Viewing.Extension.ControlSelector.js");
 
 var configClient = require("../../config-client");
 
@@ -57,6 +57,13 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
       xhr.open("GET", configClient.ApiURL + '/token', false);
       xhr.send(null);
 
+      if(xhr.status != 200) {
+
+        console.log('xrh error: ');
+        console.log(xhr.statusText + ':' + xhr.status);
+        return '';
+      }
+
       var response = JSON.parse(
         xhr.responseText);
 
@@ -67,7 +74,7 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
     //
     //
     ///////////////////////////////////////////////////////////////////
-    function loadCollaboration(viewer) {
+    function loadCollaboration(viewer, container) {
 
       var meetingId = Autodesk.Viewing.Private.getParameterByName("meetingId");
 
@@ -80,7 +87,7 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
             controlGroup: 'Autodesk.ADN.MetaEditor.ControlGroup',
             meetingId: meetingId,
             mobile: AppState.mobile,
-            container: document.getElementById('viewer-collaboration'),
+            container: container,
             onLoadDocument: function(urn, modelId) {
 
               loadExtensions(viewer, modelId);
@@ -115,11 +122,24 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
     //
     //
     ///////////////////////////////////////////////////////////////////
+    $scope.$on('$destroy', function () {
+
+      if($scope.viewer) {
+
+        $scope.viewer.finish();
+        $scope.viewer = null;
+      }
+    });
+
+    ///////////////////////////////////////////////////////////////////
+    //
+    //
+    ///////////////////////////////////////////////////////////////////
     function initialize() {
 
       AppState.mobile = Toolkit.mobile().isAny();
 
-      AppState.showNavbar = false; //!AppState.mobile;
+      AppState.showNavbar = !AppState.mobile;
 
       if(!AppState.showNavbar) {
 
@@ -128,23 +148,29 @@ angular.module('Autodesk.ADN.NgGallery.App.Collaboration', [
         });
       }
 
+      $scope.viewer = null;
+
       var options = {
         env: configClient.env,
         refreshToken: getTokenSync,
         getAccessToken: getTokenSync
       };
 
-      Autodesk.Viewing.Initializer (options, function () {
+      Autodesk.Viewing.Initializer(options, function () {
+
+        var container = document.getElementById('viewer-collaboration');
 
         var viewer = new Autodesk.Viewing.Private.GuiViewer3D(
-          document.getElementById('viewer-collaboration'));
+          container);
 
         viewer.initialize();
 
         viewer.setLightPreset(8);
         viewer.setProgressiveRendering(false);
 
-        loadCollaboration(viewer);
+        $scope.viewer = viewer;
+
+        loadCollaboration(viewer, viewer.container);
       });
     }
 

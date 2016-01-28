@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width">
+
+    <title>ADN Mobile GL</title>
+
+
+</head>
+
+<body>
+
+    <style>
+
+        body {
+            padding:0;
+            margin: 0;
+        }
+
+        #webGLDiv {
+            width:100%;
+            height:500px;
+        }
+
+        .fullscreen-btn {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        height: 24px;
+        }
+
+    </style>
+
+    <button id="fullscreen-btn" onclick="goFullscreen()" class="fullscreen-btn">
+        Fullscreen
+    </button>
+
+    <div id="webGLDiv">
+        <canvas id="renderer">
+
+        </canvas>
+    </div>
+
+    <script src="http://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="https://rawgit.com/jgallen23/querystring/master/dist/querystring.min.js"></script>
+
+    <script src="js/three.min.js"></script>
+    <!--<script src="http://threejs.org/build/three.min.js"></script>-->
+
+    <script src="http://learningthreejs.com/data/THREEx/THREEx.FullScreen.js"></script>
+    <script src="https://rawgit.com/mrdoob/three.js/master/examples/js/controls/TrackballControls.js"></script>
+    <script src="https://rawgit.com/mrdoob/three.js/master/examples/js/effects/StereoEffect.js"></script>
+    <script src="https://hammerjs.github.io/dist/hammer.js"></script>
+
+    <script src="js/DeviceOrientationController.js"></script>
+    <script src="js/OculusRiftEffect.js"></script>
+    <script src="js/gl.js"></script>
+
+</body>
+
+</html>

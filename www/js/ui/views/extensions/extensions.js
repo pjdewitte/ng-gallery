@@ -28,6 +28,7 @@ var configClient = require("../../../config-client");
 angular.module('Autodesk.ADN.NgGallery.View.Extensions',
   [
     'ngRoute',
+    'treeControl'
   ])
 
   ///////////////////////////////////////////////////////////////////////

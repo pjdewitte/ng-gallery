@@ -7,22 +7,8 @@
 
             <div ui-layout-container size="62%" id="viewer-extension-editor-container">
 
-                <adn-viewer-container
-                    url="{{tokenUrl}}"
-                    urn="{{docUrn}}"
-                    config="{{viewerContainerConfig}}"
-                    on-viewer-factory-initialized="onViewerFactoryInitialized(factory)"
-                    on-viewable-path="onViewablePath(pathInfoCollection)">
-
-                    <adn-viewer
-                        id="viewer-extension-editor"
-                        path="{{path}}"
-                        config="{{viewerConfig}}"
-                        on-destroy="onDestroy(viewer)"
-                        on-viewer-initialized="onViewerInitialized(viewer)">
-                    </adn-viewer>
-
-                </adn-viewer-container>
+              <viewer-div id="viewer-ext-editor" class="default-viewer">
+              </viewer-div>
 
             </div>
 
@@ -46,17 +32,6 @@
                                 <span class="glyphicon glyphicon-floppy-remove" aria-hidden="true"></span> Unload
                             </button>
 
-                            <!--ui-select
-                                ng-model="currentExtension.selected"
-                                theme="selectize"
-                                ng-disabled="disabled"
-                                title="Extensions..."
-                                style="width:150px; height:40px; z-index: 999">
-                                <ui-select-match placeholder="Select extension">{{$select.selected.label}}</ui-select-match>
-                                <ui-select-choices repeat="extension in extensions | filter: $select.search">
-                                    <span ng-bind-html="extension.label "></span>
-                                </ui-select-choices>
-                            </ui-select-->
                         </div>
 
                     </div>

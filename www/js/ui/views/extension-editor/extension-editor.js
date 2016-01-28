@@ -52,22 +52,68 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
   ['$scope', '$http', '$sce', 'Model', 'Toolkit', 'AppState', 'Extension',
     function($scope, $http, $sce, Model, Toolkit, AppState, Extension) {
 
-      $scope.tokenUrl = configClient.ApiURL + '/token';
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function getTokenSync() {
 
-      $scope.viewerContainerConfig = {
+        var xhr = new XMLHttpRequest();
 
-        environment: 'AutodeskProduction'
-      };
+        xhr.open("GET", configClient.ApiURL + '/token', false);
+        xhr.send(null);
 
-      $scope.viewerConfig = {
+        if(xhr.status != 200) {
 
-        lightPreset: 8,
-        viewerType: 'GuiViewer3D',
-        qualityLevel: [true, true],
-        navigationTool:'freeorbit',
-        progressiveRendering: true,
-        backgroundColor:[3,4,5, 250, 250, 250]
-      };
+          console.log('xrh error: ');
+          console.log(xhr.statusText + ':' + xhr.status);
+          return '';
+        }
+
+        var response = JSON.parse(
+          xhr.responseText);
+
+        return response.access_token;
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function getViewablePath(LMVDocument) {
+
+        var viewablePath = [];
+
+        var rootItem = LMVDocument.getRootItem();
+
+        var path3d = Autodesk.Viewing.Document.getSubItemsWithProperties(
+          rootItem,
+          { 'type': 'geometry', 'role': '3d' },
+          true);
+
+        path3d.forEach(function(path){
+          viewablePath.push({
+            type: '3d',
+            name : path.name,
+            path: LMVDocument.getViewablePath(path)
+          });
+        });
+
+        var path2d = Autodesk.Viewing.Document.getSubItemsWithProperties(
+          rootItem,
+          { 'type': 'geometry', 'role': '2d' },
+          true);
+
+        path2d.forEach(function(path){
+          viewablePath.push({
+            type: '2d',
+            name : path.name,
+            path: LMVDocument.getViewablePath(path)
+          });
+        });
+
+        return viewablePath;
+      }
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -75,79 +121,52 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
       ///////////////////////////////////////////////////////////////////
       function loadFromId(id) {
 
-        if(id.length) {
+        Model.get({ id: id }, function(model) {
 
-          Model.get({ id: id }, function(model) {
-            $scope.docUrn = model.urn;
+          $scope.currentModel = model;
+
+          AppState.pageTitle = 'Gallery - ' + model.name;
+
+          var options = {
+            env: configClient.env,
+            refreshToken: getTokenSync,
+            getAccessToken: getTokenSync
+          };
+
+          Autodesk.Viewing.Initializer (options, function () {
+
+            Autodesk.Viewing.Document.load(
+              'urn:' + model.urn,
+              function (LMVDocument) {
+
+                var viewablePath = getViewablePath(LMVDocument);
+
+                if(viewablePath.length > 0) {
+
+                  var viewer = new Autodesk.Viewing.Private.GuiViewer3D(
+                    document.getElementById('viewer-ext-editor'));
+
+                  viewer.initialize();
+
+                  viewer.setLightPreset(8);
+                  viewer.setProgressiveRendering(false);
+
+                  viewer.loadModel(viewablePath[0].path);
+
+                  $scope.viewer = viewer;
+                }
+                else {
+
+                  console.log('Error: No Viewable Path...');
+                }
+              }, function(error) {
+
+                console.log('Load Error:');
+                console.log(error);
+              });
           });
-        }
+        });
       }
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onViewerFactoryInitialized = function (factory) {
-
-      };
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onViewerInitialized = function (viewer) {
-
-        $scope.viewer = viewer;
-
-        $scope.viewer.resize();
-
-        var id = Autodesk.Viewing.Private.getParameterByName("id");
-
-        if(id.length) {
-
-          loadFromId(id);
-        }
-        else {
-
-          $scope.$emit('app.EmitMessage', {
-            msgId: 'dlg.models',
-            msgArgs: {
-              source: '/extension-editor'
-            }
-          });
-        }
-      };
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onViewablePath = function (pathInfoCollection) {
-
-        if(pathInfoCollection.path3d.length > 0) {
-
-          $scope.path = pathInfoCollection.path3d[0].path;
-
-          $scope.viewer.load($scope.path);
-        }
-
-        else if(pathInfoCollection.path2d.length > 0) {
-
-          $scope.path = pathInfoCollection.path2d[0].path;
-
-          $scope.viewer.load($scope.path);
-        }
-      };
-
-      ///////////////////////////////////////////////////////////////////
-      //
-      //
-      ///////////////////////////////////////////////////////////////////
-      $scope.onDestroy = function (viewer) {
-
-        if(viewer)
-          viewer.finish();
-      };
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -155,18 +174,10 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
       ///////////////////////////////////////////////////////////////////
       $scope.$on('ui.layout.resize', function (event, data) {
 
-        resize();
-      });
-
-      function resize() {
-
-        $('#viewer-extension-editor').height(
-          $('#viewer-extension-editor-container').height());
-
         if($scope.viewer) {
           $scope.viewer.resize();
         }
-      }
+      });
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -311,7 +322,7 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
         ];
 
         $scope.editor.setValue(defaultCode.join('\n'), 1);
-      };
+      }
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -386,7 +397,7 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
             loadExtensions(extIds);
           }
         });
-      };
+      }
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -400,7 +411,7 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
         });
 
         $scope.loadedExtIds = [];
-      };
+      }
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -423,16 +434,55 @@ angular.module('Autodesk.ADN.NgGallery.View.ExtensionEditor',
       //
       //
       ///////////////////////////////////////////////////////////////////
-      AppState.pageTitle = 'View & Data Gallery';
+      $scope.$on('$destroy', function () {
 
-      AppState.activeView = 'extension-editor';
+        if($scope.viewer) {
 
-      $scope.loadedExtIds = [];
+          $scope.viewer.finish();
+          $scope.viewer = null;
+        }
+      });
 
-      $scope.viewer = null;
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      function initialize() {
 
-      $scope.height = 500;
+        AppState.pageTitle = 'Gallery - Dynamic Editor';
 
-      initializeEditor();
+        AppState.activeView = 'extension-editor';
+
+        $scope.loadedExtIds = [];
+
+        $scope.viewer = null;
+
+        $scope.height = 500;
+
+        initializeEditor();
+
+        var id = Autodesk.Viewing.Private.getParameterByName("id");
+
+        if(id.length) {
+
+          loadFromId(id);
+        }
+        else {
+
+          $scope.$emit('app.EmitMessage', {
+            msgId: 'dlg.models',
+            msgArgs: {
+              source: '/extension-editor'
+            }
+          });
+        }
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      initialize();
+
     }]);
 

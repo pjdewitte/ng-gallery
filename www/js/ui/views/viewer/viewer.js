@@ -19,7 +19,6 @@
 
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.ExtensionManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.AnimationManager");
-require("../../../extensions/Autodesk.ADN.Viewing.Extension.ControlSelector");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.Collaboration");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.StateManager");
 require("../../../extensions/Autodesk.ADN.Viewing.Extension.EmbedManager");
@@ -60,8 +59,8 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
   ///////////////////////////////////////////////////////////////////////////
   .controller('Autodesk.ADN.NgGallery.View.Viewer.Controller',
 
-  ['$rootScope', '$scope', '$timeout', 'Model', 'Toolkit', 'AppState',
-    function($rootScope, $scope, $timeout, Model, Toolkit, AppState) {
+  ['$rootScope', '$scope', '$timeout', 'Model', 'Toolkit', 'AppState', 'Channel',
+    function($rootScope, $scope, $timeout, Model, Toolkit, AppState, Channel) {
 
       ///////////////////////////////////////////////////////////////////
       //
@@ -73,6 +72,13 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         xhr.open("GET", configClient.ApiURL + '/token', false);
         xhr.send(null);
+
+        if(xhr.status != 200) {
+
+          console.log('xrh error: ');
+          console.log(xhr.statusText + ':' + xhr.status);
+          return '';
+        }
 
         var response = JSON.parse(
           xhr.responseText);
@@ -107,9 +113,12 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
           if(id === view.id) {
 
-            view.viewer.finish();
+            if(view.viewer) {
 
-            view.viewer = null;
+              view.viewer.finish();
+
+              view.viewer = null;
+            }
 
             $scope.views.splice(idx, 1);
           }
@@ -300,6 +309,46 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
       //
       //
       ///////////////////////////////////////////////////////////////////
+      function loadFromUrn(urn) {
+
+        var options = {
+          env: configClient.env,
+          refreshToken: getTokenSync,
+          getAccessToken: getTokenSync
+        };
+
+        Autodesk.Viewing.Initializer (options, function () {
+
+          Autodesk.Viewing.Document.load(
+            'urn:' + urn,
+            function (LMVDocument) {
+
+              var viewablePath = getViewablePath(LMVDocument);
+
+              $scope.$broadcast('viewer.viewable-path-loaded', {
+                viewablePath: viewablePath
+              });
+
+              if(viewablePath.length > 0) {
+
+                addView(viewablePath[0].path);
+              }
+              else {
+
+                console.log('Error: No Viewable Path...');
+              }
+            }, function(error) {
+
+              console.log('Load Error:');
+              console.log(error);
+            });
+        });
+      }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
       function loadFromId(id) {
 
         Model.get({ id: id }, function(model) {
@@ -308,38 +357,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
           AppState.pageTitle = 'Gallery - ' + model.name;
 
-          var options = {
-            env: configClient.env,
-            refreshToken: getTokenSync,
-            getAccessToken: getTokenSync
-          };
-
-          Autodesk.Viewing.Initializer (options, function () {
-
-            Autodesk.Viewing.Document.load(
-              'urn:' + model.urn,
-              function (LMVDocument) {
-
-                var viewablePath = getViewablePath(LMVDocument);
-
-                $scope.$broadcast('viewer.viewable-path-loaded', {
-                  viewablePath: viewablePath
-                });
-
-                if(viewablePath.length > 0) {
-
-                  addView(viewablePath[0].path);
-                }
-                else {
-
-                  console.log('Error: No Viewable Path...');
-                }
-              }, function(error) {
-
-                console.log('Load Error:');
-                console.log(error);
-              });
-          });
+          loadFromUrn(model.urn);
         });
       }
 
@@ -439,6 +457,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
             index: 2,
             controlGroup: 'Gallery',
             apiUrl: configClient.ApiURL + '/extensions',
+            extensionsChannel: Channel.getChannel('extensions.connect'),
             extensionsUrl: configClient.ApiURL + '/extensions/transpile',
             extensionsSourceUrl: configClient.host + '/uploads/extensions'
           });
@@ -468,11 +487,6 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
         });
 
         viewer.unloadExtension("Autodesk.Section");
-
-        viewer.loadExtension(
-          'Autodesk.ADN.Viewing.Extension.ControlSelector', {
-            isMobile: AppState.mobile
-          });
       }
 
       ///////////////////////////////////////////////////////////////////
@@ -553,7 +567,7 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         view.viewer = viewer;
 
-        loadCollaboration(viewer, view.path, container);
+        loadCollaboration(viewer, view.path, viewer.container);
       }
 
       ///////////////////////////////////////////////////////////////////////
@@ -564,6 +578,20 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
 
         removeView(id);
       }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$on('$destroy', function () {
+
+        $scope.views.forEach(function(view){
+
+          view.viewer.finish();
+
+          view.viewer = null;
+        });
+      });
 
       ///////////////////////////////////////////////////////////////////////
       //
@@ -597,6 +625,34 @@ angular.module('Autodesk.ADN.NgGallery.View.Viewer',
           });
         }
       }
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$on('viewer.load-urn', function (event, data) {
+
+        loadFromUrn(data.urn);
+      });
+
+      ///////////////////////////////////////////////////////////////////
+      //
+      //
+      ///////////////////////////////////////////////////////////////////
+      $scope.$on('viewer.load-file', function (event, data) {
+
+        var filename = URL.createObjectURL(data.file);
+
+        var options = {
+          env: 'Local'
+        };
+
+        Autodesk.Viewing.Initializer (options, function () {
+
+          addView('file:///Users/leefsmp/Documents/Temp/models/SVF/OblivionCopter/oblivion-copter.svf');
+          //addView(filename);
+        });
+      });
 
       ///////////////////////////////////////////////////////////////////////
       //

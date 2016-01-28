@@ -42,7 +42,7 @@ angular.module('Autodesk.ADN.NgGallery.Dialog.Models',[])
 
                     return !$scope.modelsFilterValue ||
                       regExp.test(model.name);
-                };
+                }
 
                 ///////////////////////////////////////////////////////////////////
                 //
@@ -88,7 +88,53 @@ angular.module('Autodesk.ADN.NgGallery.Dialog.Models',[])
                     $('#modelsDlg').modal('hide');
 
                     $location.path($scope.source).search({id: modelId});
-                };
+                }
+
+                ///////////////////////////////////////////////////////////////////
+                //
+                //
+                ///////////////////////////////////////////////////////////////////
+                $scope.onLoadUrn = function() {
+
+                  if($scope.modelsFilterValue) {
+
+                    $('#modelsDlg').modal('hide');
+
+                    $scope.$emit('app.EmitMessage', {
+                      msgId: 'viewer.load-urn',
+                      msgArgs: {
+                        urn: $scope.modelsFilterValue
+                      }
+                    });
+                  }
+                }
+
+              ///////////////////////////////////////////////////////////////////
+              //
+              //
+              ///////////////////////////////////////////////////////////////////
+              $scope.onLoadFile = function() {
+
+                $("#models-file-input").trigger("click")
+              }
+
+              $("#models-file-input").on('change',
+                function (event) {
+
+                  var file = event.target.files[0];
+
+                  if(file) {
+
+                    $('#modelsDlg').modal('hide');
+
+                    $scope.$emit('app.EmitMessage', {
+                      msgId: 'viewer.load-file',
+                      msgArgs: {
+                        file: file
+                      }
+                    });
+                  }
+                });
 
                 ///////////////////////////////////////////////////////////////////
                 //

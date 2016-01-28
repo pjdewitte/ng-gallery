@@ -17,9 +17,9 @@
 /////////////////////////////////////////////////////////////////////////////////
 var multipart = require('connect-multiparty');
 var flowFactory = require('../flow');
+var babel = require('babel-core');
 var express = require('express');
 var request = require('request');
-var babel = require('babel');
 var path = require('path');
 var fs = require('fs');
 
@@ -204,7 +204,9 @@ module.exports = function(db) {
         req.params.extensionId + '/' +
         req.params.fileId);
 
-      var options = {};
+      var options = {
+        presets: ['es2015', 'stage-0']
+      };
 
       //result; // => { code, map, ast }
       babel.transformFile(filepath,

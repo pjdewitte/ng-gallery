@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="lib/bower_components/font-awesome/css/font-awesome.min.css"/>
     <link rel="stylesheet" type="text/css" href="lib/bower_components/bootstrap/dist/css/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="lib/bower_components/dragula.js/dist/dragula.min.css"/>
-    <link rel="stylesheet" type="text/css" href="lib/lmv-local/v1.2.21/style.css?v=v1.2.21">
+    <link rel="stylesheet" type="text/css" href="lib/lmv-local/v1.2.23/style.css">
     <link rel="stylesheet" type="text/css" href="css/flow.css">
     <link rel="stylesheet" type="text/css" href="css/app.css">
 
@@ -21,19 +21,20 @@
     <div ng-if="AppState.showNavbar" ng-include="'js/ui/navbars/app-navbar/app-navbar.html'">
     </div>
 
-    <div id="viewer-collaboration" style="height:calc(100vh - 64px); position: relative">
+    <viewer-div id="viewer-collaboration" class="default-viewer">
 
-    </div>
+    </viewer-div>
 
     <script src="lib/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="lib/jquery-qrcode-0.12.0/jquery.qrcode-0.12.0.min.js"></script>
 
     <!--<script src="https://developer.api.autodesk.com/viewingservice/v1/viewers/three.min.js?v=v1.2.19"></script>-->
     <!--<script src="https://developer.api.autodesk.com/viewingservice/v1/viewers/viewer3D.min.js?v=v1.2.19"></script>-->
 
-    <script src="lib/lmv-local/v1.2.21/three.min.js?v=v1.2.21"></script>
-    <script src="lib/lmv-local/v1.2.21/viewer3D.js?v=v1.2.21"></script>
-    <script src="lib/lmv-local/v1.2.21/DeviceOrientationControls.js"></script>
-    <script src="lib/lmv-local/v1.2.21/no-sleep.js"></script>
+    <script src="lib/lmv-local/v1.2.23/three.min.js"></script>
+    <script src="lib/lmv-local/v1.2.23/viewer3D.js"></script>
+    <script src="lib/lmv-local/v1.2.23/DeviceOrientationControls.js"></script>
+    <script src="lib/lmv-local/v1.2.23/no-sleep.js"></script>
 
     <script src="lib/bower_components/view-and-data-toolkit/dist/js/view-and-data-client-v2.min.js"></script>
     <script src="lib/bower_components/view-and-data-toolkit/dist/js/viewer.min.js"></script>
@@ -48,8 +49,6 @@
     <script src="lib/bower_components/dragula.js/dist/dragula.min.js"></script>
     <script src="lib/bower_components/lodash/lodash.min.js"></script>
     <script src="lib/bower_components/lockr/lockr.min.js"></script>
-
-    <script src="lib/qrcodejs/qrcode.min.js"></script>
 
     <script src="build/collaboration.app.min.js"></script>
 </body>

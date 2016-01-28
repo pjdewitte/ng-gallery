@@ -281,27 +281,45 @@ module.exports = function(db, lmv) {
   // restore all collections
   //
   ///////////////////////////////////////////////////////////////////////////////
-  router.get('/restore', function (req, res) {
+  router.get('/restore/:drop', function (req, res) {
+
+    var drop = req.params.drop;
 
     var dir = 'db-backup';
 
     var collections = [
-      'gallery.models',
-      'gallery.users',
+      //'gallery.models',
+      //'gallery.users',
       'gallery.extensions'
     ];
 
     collections.forEach(function(collection){
 
-      restoreCollection(collection, dir + '/' + collection + '.json');
+      if(drop){
+
+        db.collection(collection, function (err, dbCollection) {
+
+          dbCollection.drop(function (errDrop, result) {
+
+            restoreCollection(collection,
+              dir + '/' + collection + '.json');
+          });
+        });
+      }
+      else{
+
+        restoreCollection(collection,
+          dir + '/' + collection + '.json');
+      }
     });
 
     res.json('ok');
   });
 
-  function restoreCollection(collectionName, intputFile) {
+  function restoreCollection(collectionName, intputFile, drop) {
 
     db.collection(collectionName, function (err, collection) {
+
       collection.find()
         .sort({name: 1}).toArray(
         function (err, items) {
